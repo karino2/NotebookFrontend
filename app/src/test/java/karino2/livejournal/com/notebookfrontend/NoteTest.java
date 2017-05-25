@@ -35,4 +35,12 @@ public class NoteTest {
         assertEquals(dateFrom("2017-05-18T08:16:35.851660+00:00"), note.created);
 
     }
+
+    static final String SESSION_RESPONSE = "{\"id\": \"43bbed35-0737-485a-a8c0-922e7048926f\", \"path\": \"notebooktest2.ipynb\", \"name\": null, \"type\": \"notebook\", \"kernel\": {\"id\": \"4f8148c6-8fc8-4514-bbfa-84ffa8b3dc56\", \"name\": \"python3\"}, \"notebook\": {\"path\": \"notebooktest2.ipynb\", \"name\": null}}\n";
+    @Test
+    public void sessionTest() {
+        SessionInfo si = SessionInfo.fromJson(SESSION_RESPONSE);
+        assertEquals("4f8148c6-8fc8-4514-bbfa-84ffa8b3dc56", si.kernel.id);
+    }
+
 }
