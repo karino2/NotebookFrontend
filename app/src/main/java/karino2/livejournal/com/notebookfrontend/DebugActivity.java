@@ -1,6 +1,7 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 
@@ -29,7 +30,8 @@ public class DebugActivity extends Activity {
 
         findViewById(R.id.buttonSend).setOnClickListener(view->onSend());
 
-
+        Intent intent = new Intent(this, NotebookActivity.class);
+        startActivity(intent);
     }
 
     public static String uuid() {

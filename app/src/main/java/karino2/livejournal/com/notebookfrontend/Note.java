@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by _ on 2017/05/24.
@@ -30,7 +31,7 @@ public class Note {
 
 
     public static class Content {
-        public Collection<Cell> cells;
+        public List<Cell> cells;
 
     }
 
