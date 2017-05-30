@@ -26,7 +26,7 @@ public class Kernel extends WebSocketListener {
         this.sessionId = sessionId;
 
         messageQueue = queue;
-        messageQueue.registerMessageArriveListener(()->notifyMessageArrive());
+        messageQueue.setMessageArriveListener(()->notifyMessageArrive());
     }
 
     @Override

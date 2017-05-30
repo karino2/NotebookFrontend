@@ -21,7 +21,7 @@ public class KernelMessageQueue {
 
 
 
-    public void registerMessageArriveListener(Runnable listener) {
+    public void setMessageArriveListener(Runnable listener) {
         messageArriveListener = listener;
     }
 

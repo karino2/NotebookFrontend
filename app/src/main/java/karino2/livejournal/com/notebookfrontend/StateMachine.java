@@ -34,12 +34,22 @@ public class StateMachine {
 
     Runnable notifyWakeup = ()->{};
 
-    public void registerWakeupListener(Runnable listener) {
+    public void registerWakeupHandler(Runnable listener) {
         this.notifyWakeup = listener;
     }
 
+
+    int port;
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public void registerNullState(int stateVal) {
+        registerState(stateVal, nullState);
+    }
+
     public StateMachine() {
-        registerState(STATE_NONE, nullState);
+        registerNullState(STATE_NONE);
     }
 
     public void registerState(int stateVal, State state) {

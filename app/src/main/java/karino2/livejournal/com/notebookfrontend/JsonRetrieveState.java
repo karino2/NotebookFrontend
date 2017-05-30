@@ -1,6 +1,7 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -43,14 +44,18 @@ public class JsonRetrieveState implements  StateMachine.State {
                 .get()
                 .build();
 
+        Log.d("NotebookFrontend", "json retrieve begin");
+
         Single.create(emitter -> {
             Response resp = httpClient.newCall(request).execute();
             String jsonString = resp.body().string();
 
+            Log.d("NotebookFrontend", "json retrieve response come");
             emitter.onSuccess(jsonString);
         }).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(json -> {
+                    Log.d("NotebookFrontend", "json retrieve subscribe");
                     onJsonReceive.onStringCome((String)json);
                     Bundle createSessionArg = new Bundle();
                     createSessionArg.putString("SESSION_ARG_NAME", ipynbPath);

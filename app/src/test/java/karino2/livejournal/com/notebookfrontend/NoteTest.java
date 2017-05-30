@@ -91,9 +91,124 @@ public class NoteTest {
 
     }
 
+
+    public static final String TEST_JSON_CONTENT = "{\n" +
+            " \"cells\": [\n" +
+            "  {\n" +
+            "   \"cell_type\": \"code\",\n" +
+            "   \"execution_count\": 11,\n" +
+            "   \"metadata\": {\n" +
+            "    \"collapsed\": false\n" +
+            "   },\n" +
+            "   \"outputs\": [\n" +
+            "    {\n" +
+            "     \"name\": \"stdout\",\n" +
+            "     \"output_type\": \"stream\",\n" +
+            "     \"text\": [\n" +
+            "      \"Hello\\n\"\n" +
+            "     ]\n" +
+            "    }\n" +
+            "   ],\n" +
+            "   \"source\": [\n" +
+            "    \"print(\\\"Hello\\\")\"\n" +
+            "   ]\n" +
+            "  },\n" +
+            "  {\n" +
+            "   \"cell_type\": \"code\",\n" +
+            "   \"execution_count\": 1,\n" +
+            "   \"metadata\": {\n" +
+            "    \"collapsed\": false\n" +
+            "   },\n" +
+            "   \"outputs\": [\n" +
+            "    {\n" +
+            "     \"name\": \"stdout\",\n" +
+            "     \"output_type\": \"stream\",\n" +
+            "     \"text\": [\n" +
+            "      \"Hello2\\n\",\n" +
+            "      \"\\n\",\n" +
+            "      \"NextLine\\n\"\n" +
+            "     ]\n" +
+            "    }\n" +
+            "   ],\n" +
+            "   \"source\": [\n" +
+            "    \"print(\\\"Hello2\\\\n\\\")\\n\",\n" +
+            "    \"print(\\\"NextLine\\\")\"\n" +
+            "   ]\n" +
+            "  },\n" +
+            "  {\n" +
+            "   \"cell_type\": \"markdown\",\n" +
+            "   \"metadata\": {\n" +
+            "    \"collapsed\": true\n" +
+            "   },\n" +
+            "   \"source\": [\n" +
+            "    \"## Markdown cell\\n\",\n" +
+            "    \"\\n\",\n" +
+            "    \"Here is the test of markdown.\\n\",\n" +
+            "    \"Next line.\"\n" +
+            "   ]\n" +
+            "  },\n" +
+            "  {\n" +
+            "   \"cell_type\": \"code\",\n" +
+            "   \"execution_count\": 4,\n" +
+            "   \"metadata\": {\n" +
+            "    \"collapsed\": false\n" +
+            "   },\n" +
+            "   \"outputs\": [\n" +
+            "    {\n" +
+            "     \"data\": {\n" +
+            "      \"image/png\": \"iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAADXUAAA11AFeZeUIAAAA\\n70lEQVQokZWSMQ6CQBBFP4YYOmxJKCwMrYWdBdkz0MoJqOAQdDRewMYzGFuvYOEBKExoCIWJEQL5\\nFrgqumbjZIqdyX+T+btrkMQ/YQ6qpkGWYbdDVQHAeAzbxmSCIMBqBdMEAD6jLLlcElCnEKxrkhLo\\nOgrxU93nek1y9Fhmv8fhoFn/dAIggeNR7/d6fQNuNz3Qtm+AZemBIACet7TZKFwuFq9zkvRC+Q6u\\nqxgZhkhT5DmEgOf1PQk4jgI4nxHHHz3pwfNg25/AdKqY8nrpLBsYmM14ufArMKi2W/o+53NGEYvi\\nW03S+Pe3jvSSYdwBxsfDQdbYcZMAAAAASUVORK5CYII=\\n\",\n" +
+            "      \"text/plain\": [\n" +
+            "       \"<IPython.core.display.Image object>\"\n" +
+            "      ]\n" +
+            "     },\n" +
+            "     \"execution_count\": 4,\n" +
+            "     \"metadata\": {},\n" +
+            "     \"output_type\": \"execute_result\"\n" +
+            "    }\n" +
+            "   ],\n" +
+            "   \"source\": [\n" +
+            "    \"from IPython.display import Image\\n\",\n" +
+            "    \"Image(\\\"test.png\\\")\"\n" +
+            "   ]\n" +
+            "  },\n" +
+            "  {\n" +
+            "   \"cell_type\": \"code\",\n" +
+            "   \"execution_count\": null,\n" +
+            "   \"metadata\": {\n" +
+            "    \"collapsed\": true\n" +
+            "   },\n" +
+            "   \"outputs\": [],\n" +
+            "   \"source\": []\n" +
+            "  }\n" +
+            " ],\n" +
+            " \"metadata\": {\n" +
+            "  \"kernelspec\": {\n" +
+            "   \"display_name\": \"Python 3\",\n" +
+            "   \"language\": \"python\",\n" +
+            "   \"name\": \"python3\"\n" +
+            "  },\n" +
+            "  \"language_info\": {\n" +
+            "   \"codemirror_mode\": {\n" +
+            "    \"name\": \"ipython\",\n" +
+            "    \"version\": 3\n" +
+            "   },\n" +
+            "   \"file_extension\": \".py\",\n" +
+            "   \"mimetype\": \"text/x-python\",\n" +
+            "   \"name\": \"python\",\n" +
+            "   \"nbconvert_exporter\": \"python\",\n" +
+            "   \"pygments_lexer\": \"ipython3\",\n" +
+            "   \"version\": \"3.6.0\"\n" +
+            "  }\n" +
+            " },\n" +
+            " \"nbformat\": 4,\n" +
+            " \"nbformat_minor\": 2\n" +
+            "}\n";
+
+
     @Test
     public void TEST_JSON_CONTENT_parseTest() {
-        String json = NotebookActivity.TEST_JSON_CONTENT;
+        // wrong test format. put here for note purpose.
+        String json = TEST_JSON_CONTENT;
         Gson gson = new GsonBuilder()
                 .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                 .create();

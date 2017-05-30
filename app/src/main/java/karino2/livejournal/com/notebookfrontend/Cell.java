@@ -27,6 +27,8 @@ public class Cell {
 
 
     static String jsonElementToString(JsonElement obj) {
+        if(obj == null)
+            return "";
         if(obj.isJsonArray()) {
             List<String> sources = s_gson.fromJson(obj, List.class);
             return mergeAll(sources);

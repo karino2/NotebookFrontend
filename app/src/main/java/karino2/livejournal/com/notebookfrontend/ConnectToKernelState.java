@@ -2,11 +2,10 @@ package karino2.livejournal.com.notebookfrontend;
 
 import android.os.Bundle;
 
-import java.util.function.Function;
-
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -32,6 +31,8 @@ public class ConnectToKernelState implements StateMachine.State {
     SessionInfo sessionInfo;
 
 
+    Kernel kernel;
+
     @Override
     public void begin(Bundle bundle) {
         String argJson = bundle.getString("SESSION_INFO_JSON");
@@ -46,7 +47,7 @@ public class ConnectToKernelState implements StateMachine.State {
                 .build();
 
         Completable.create(emitter -> {
-            Kernel kernel = kernelFactory.apply(sessionId);
+            kernel = kernelFactory.apply(sessionId);
             httpClient.newWebSocket(request, kernel);
             emitter.onComplete();
         }).subscribeOn(Schedulers.io())

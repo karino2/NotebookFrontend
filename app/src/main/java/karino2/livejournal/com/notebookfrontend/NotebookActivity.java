@@ -1,11 +1,13 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
@@ -17,10 +19,16 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Function;
+import okhttp3.OkHttpClient;
+
 public class NotebookActivity extends Activity {
 
 
     ArrayAdapter<Cell> listAdapter;
+    StateMachine stateMachine;
+    KernelMessageQueue messageQueue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,29 +37,9 @@ public class NotebookActivity extends Activity {
 
         ListView lv = (ListView)findViewById(R.id.listView);
 
-        Gson gson = new GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create();
 
-        /*
-        Note note = Note.fromJson(TEST_JSON_CONTENT);
-        List<Cell> cells = note.content.cells;
-        */
 
-        JsonObject contentjson = gson.fromJson(TEST_JSON_CONTENT, JsonObject.class);
-        JsonArray cellsJson = contentjson.get("cells").getAsJsonArray();
-        /*
-        cellsJson.
-        List<Cell> cells = gson.fromJson(cellsJson, List.class);
-        */
-        List<Cell> cells = new ArrayList<Cell>();
-        for(JsonElement elem : cellsJson) {
-            Cell one = gson.fromJson(elem, Cell.class);
-            cells.add(one);
-
-        }
-
-        listAdapter = new ArrayAdapter<Cell>(this, 0, cells) {
+        listAdapter = new ArrayAdapter<Cell>(this, 0) {
             @Override
             public View getView(int position, View convertView, ViewGroup parent) {
                 CellView cellView;
@@ -67,120 +55,118 @@ public class NotebookActivity extends Activity {
             }
         };
         lv.setAdapter(listAdapter);
+        stateMachine = new StateMachine();
+
+        messageQueue = new KernelMessageQueue();
+
+
+
+
+        Intent intent = getIntent();
+        if(intent == null) {
+            showMessage("Intent null. NYI case.");
+            return;
+        }
+        /*
+        intent.putExtra("PORT", port);
+        intent.putExtra("IPYNB_PATH", path);
+        */
+        int port = intent.getIntExtra("PORT", 51234);
+        String path = intent.getStringExtra("IPYNB_PATH");
+
+        setupStateMachine(port, path);
+
+        /*
+
+
+        String jsonContent = TEST_JSON_CONTENT;
+        bindNewContent(jsonContent);
+        */
+
 
     }
 
+    OkHttpClient httpClient = new OkHttpClient();
 
 
-    public static final String TEST_JSON_CONTENT = "{\n" +
-            " \"cells\": [\n" +
-            "  {\n" +
-            "   \"cell_type\": \"code\",\n" +
-            "   \"execution_count\": 11,\n" +
-            "   \"metadata\": {\n" +
-            "    \"collapsed\": false\n" +
-            "   },\n" +
-            "   \"outputs\": [\n" +
-            "    {\n" +
-            "     \"name\": \"stdout\",\n" +
-            "     \"output_type\": \"stream\",\n" +
-            "     \"text\": [\n" +
-            "      \"Hello\\n\"\n" +
-            "     ]\n" +
-            "    }\n" +
-            "   ],\n" +
-            "   \"source\": [\n" +
-            "    \"print(\\\"Hello\\\")\"\n" +
-            "   ]\n" +
-            "  },\n" +
-            "  {\n" +
-            "   \"cell_type\": \"code\",\n" +
-            "   \"execution_count\": 1,\n" +
-            "   \"metadata\": {\n" +
-            "    \"collapsed\": false\n" +
-            "   },\n" +
-            "   \"outputs\": [\n" +
-            "    {\n" +
-            "     \"name\": \"stdout\",\n" +
-            "     \"output_type\": \"stream\",\n" +
-            "     \"text\": [\n" +
-            "      \"Hello2\\n\",\n" +
-            "      \"\\n\",\n" +
-            "      \"NextLine\\n\"\n" +
-            "     ]\n" +
-            "    }\n" +
-            "   ],\n" +
-            "   \"source\": [\n" +
-            "    \"print(\\\"Hello2\\\\n\\\")\\n\",\n" +
-            "    \"print(\\\"NextLine\\\")\"\n" +
-            "   ]\n" +
-            "  },\n" +
-            "  {\n" +
-            "   \"cell_type\": \"markdown\",\n" +
-            "   \"metadata\": {\n" +
-            "    \"collapsed\": true\n" +
-            "   },\n" +
-            "   \"source\": [\n" +
-            "    \"## Markdown cell\\n\",\n" +
-            "    \"\\n\",\n" +
-            "    \"Here is the test of markdown.\\n\",\n" +
-            "    \"Next line.\"\n" +
-            "   ]\n" +
-            "  },\n" +
-            "  {\n" +
-            "   \"cell_type\": \"code\",\n" +
-            "   \"execution_count\": 4,\n" +
-            "   \"metadata\": {\n" +
-            "    \"collapsed\": false\n" +
-            "   },\n" +
-            "   \"outputs\": [\n" +
-            "    {\n" +
-            "     \"data\": {\n" +
-            "      \"image/png\": \"iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAACXBIWXMAADXUAAA11AFeZeUIAAAA\\n70lEQVQokZWSMQ6CQBBFP4YYOmxJKCwMrYWdBdkz0MoJqOAQdDRewMYzGFuvYOEBKExoCIWJEQL5\\nFrgqumbjZIqdyX+T+btrkMQ/YQ6qpkGWYbdDVQHAeAzbxmSCIMBqBdMEAD6jLLlcElCnEKxrkhLo\\nOgrxU93nek1y9Fhmv8fhoFn/dAIggeNR7/d6fQNuNz3Qtm+AZemBIACet7TZKFwuFq9zkvRC+Q6u\\nqxgZhkhT5DmEgOf1PQk4jgI4nxHHHz3pwfNg25/AdKqY8nrpLBsYmM14ufArMKi2W/o+53NGEYvi\\nW03S+Pe3jvSSYdwBxsfDQdbYcZMAAAAASUVORK5CYII=\\n\",\n" +
-            "      \"text/plain\": [\n" +
-            "       \"<IPython.core.display.Image object>\"\n" +
-            "      ]\n" +
-            "     },\n" +
-            "     \"execution_count\": 4,\n" +
-            "     \"metadata\": {},\n" +
-            "     \"output_type\": \"execute_result\"\n" +
-            "    }\n" +
-            "   ],\n" +
-            "   \"source\": [\n" +
-            "    \"from IPython.display import Image\\n\",\n" +
-            "    \"Image(\\\"test.png\\\")\"\n" +
-            "   ]\n" +
-            "  },\n" +
-            "  {\n" +
-            "   \"cell_type\": \"code\",\n" +
-            "   \"execution_count\": null,\n" +
-            "   \"metadata\": {\n" +
-            "    \"collapsed\": true\n" +
-            "   },\n" +
-            "   \"outputs\": [],\n" +
-            "   \"source\": []\n" +
-            "  }\n" +
-            " ],\n" +
-            " \"metadata\": {\n" +
-            "  \"kernelspec\": {\n" +
-            "   \"display_name\": \"Python 3\",\n" +
-            "   \"language\": \"python\",\n" +
-            "   \"name\": \"python3\"\n" +
-            "  },\n" +
-            "  \"language_info\": {\n" +
-            "   \"codemirror_mode\": {\n" +
-            "    \"name\": \"ipython\",\n" +
-            "    \"version\": 3\n" +
-            "   },\n" +
-            "   \"file_extension\": \".py\",\n" +
-            "   \"mimetype\": \"text/x-python\",\n" +
-            "   \"name\": \"python\",\n" +
-            "   \"nbconvert_exporter\": \"python\",\n" +
-            "   \"pygments_lexer\": \"ipython3\",\n" +
-            "   \"version\": \"3.6.0\"\n" +
-            "  }\n" +
-            " },\n" +
-            " \"nbformat\": 4,\n" +
-            " \"nbformat_minor\": 2\n" +
-            "}\n";
+    private void setupStateMachine(int port, String path) {
+        stateMachine.setPort(port);
+
+        JsonRetrieveState jsonState = new JsonRetrieveState(stateMachine, httpClient);
+        jsonState.setJsonReceiver(json-> {
+            bindNewContent(json);
+        });
+        stateMachine.registerState(StateMachine.STATE_GET_BASE_JSON, jsonState);
+        stateMachine.registerState(StateMachine.STATE_CREATE_SESSION, new CreateSessionState(stateMachine, httpClient));
+        stateMachine.registerState(StateMachine.STATE_CONNECT_TO_KERNEL, new ConnectToKernelState(stateMachine, httpClient, sesid-> new Kernel(sesid, messageQueue)));
+        stateMachine.registerState(StateMachine.STATE_WAIT_MESSAGE, new StateMachine.State() {
+            @Override
+            public void begin(Bundle bundle) {
+                showMessage("wait message start!");
+            }
+        });
+
+        // strange.
+        stateMachine.registerWakeupHandler(()-> {
+            if(stateMachine.isChanging()) {
+                stateMachine.doOne();
+            }
+        });
+
+
+        Bundle bundle = new Bundle();
+        bundle.putString("IPYNB_PATH", path);
+        stateMachine.gotoNextState(StateMachine.STATE_GET_BASE_JSON, bundle);
+    }
+
+    class KernelFactory implements Function<String, Kernel> {
+
+        @Override
+        public Kernel apply(String s) {
+            return createKernel(s);
+        }
+    }
+
+    Kernel createKernel(String sessionId) {
+        return new Kernel(sessionId, messageQueue);
+    }
+
+    void showMessage(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+    }
+
+    private void bindNewContent(String jsonContent) {
+        Note note = Note.fromJson(jsonContent);
+        if (note.content == null) {
+            showMessage("Invalid json retreive: " + jsonContent);
+            return;
+
+        }
+        listAdapter.addAll(note.content.cells);
+                /*
+        Gson gson = new GsonBuilder()
+                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                .create();
+
+        JsonObject contentjson = gson.fromJson(jsonContent, JsonObject.class);
+
+        JsonElement cellsElem = contentjson.get("cells");
+        if(cellsElem == null) {
+        }
+        JsonArray cellsJson = cellsElem.getAsJsonArray();
+
+
+        List<Cell> cells = new ArrayList<Cell>();
+        for(JsonElement elem : cellsJson) {
+            Cell one = gson.fromJson(elem, Cell.class);
+            cells.add(one);
+
+        }
+        listAdapter.addAll(cells);
+        */
+    }
+
+    public static final String TEST_JSON_CONTENT = "{\"mimetype\": null, \"format\": \"json\", \"type\": \"notebook\", \"writable\": true, \"path\": \"test.ipynb\", \"content\": {\"metadata\": {\"kernelspec\": {\"display_name\": \"Python 3\", \"name\": \"python3\", \"language\": \"python\"}, \"language_info\": {\"mimetype\": \"text/x-python\", \"nbconvert_exporter\": \"python\", \"pygments_lexer\": \"ipython3\", \"version\": \"3.5.2\", \"file_extension\": \".py\", \"codemirror_mode\": {\"version\": 3, \"name\": \"ipython\"}, \"name\": \"python\"}}, \"nbformat_minor\": 0, \"nbformat\": 4, \"cells\": [{\"metadata\": {\"collapsed\": false, \"trusted\": true}, \"outputs\": [{\"output_type\": \"stream\", \"text\": \"Hello\\n\", \"name\": \"stdout\"}], \"source\": \"print(\\\"Hello\\\")\", \"cell_type\": \"code\", \"execution_count\": 1}, {\"metadata\": {\"collapsed\": true, \"trusted\": true}, \"outputs\": [], \"source\": \"\", \"cell_type\": \"code\", \"execution_count\": null}]}, \"created\": \"2017-05-30T03:39:14.787459+00:00\", \"last_modified\": \"2017-05-30T03:39:14.787459+00:00\", \"name\": \"test.ipynb\"}\n" +
+            "\n";
+
 }
