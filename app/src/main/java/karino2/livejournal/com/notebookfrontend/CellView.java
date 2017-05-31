@@ -27,6 +27,7 @@ public class CellView extends LinearLayout {
     CellType cellType = CellType.UNINITIALIZE;
     TextView sourceView;
     TextView outputConsoleView;
+    TextView execCountView;
     ImageView outputImageView;
     FrameLayout outputFrame;
 
@@ -37,6 +38,7 @@ public class CellView extends LinearLayout {
 
     void ensureInitialize() {
         if(cellType == CellType.UNINITIALIZE) {
+            execCountView = (TextView)findViewById(R.id.execCountView);
             sourceView = (TextView)findViewById(R.id.sourceView);
             outputConsoleView = (TextView)findViewById(R.id.outputConsoleView);
             outputImageView = (ImageView)findViewById(R.id.outputImageView);
@@ -48,16 +50,31 @@ public class CellView extends LinearLayout {
 
     void setupMarkdownCell() {
         ensureInitialize();
+        execCountView.setVisibility(GONE);
         outputFrame.setVisibility(GONE);
 
+        sourceView.setBackgroundColor(MARKDOWN_BG_COLOR);
         sourceView.setText(cell.getSource());
     }
+
+    final int CODE_BG_COLOR = 0xffebebeb;
+    final int MARKDOWN_BG_COLOR = 0xffffffff;
 
     void setupCodeCell() {
         ensureInitialize();
         outputFrame.setVisibility(VISIBLE);
+        execCountView.setVisibility(VISIBLE);
+        sourceView.setBackgroundColor(CODE_BG_COLOR);
 
         sourceView.setText(cell.getSource());
+
+        if(cell.executionCount != null) {
+            if(cell.executionCount == -1) {
+                execCountView.setText("[*]");
+            } else {
+                execCountView.setText("[" + cell.executionCount + "]");
+            }
+        }
 
         Cell.Output output = cell.getOutput();
         if(output == null) {

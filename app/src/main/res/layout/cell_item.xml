@@ -8,13 +8,24 @@
     android:orientation="vertical">
 
 
-    <TextView
-        android:id="@+id/sourceView"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#ffeeffff"
-        android:padding="5dp"
-        android:text="a = 3 + 4" />
+        android:layout_height="wrap_content">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:id="@+id/execCountView"
+            android:minWidth="30sp"
+            android:background="#ffffffee"
+            android:text="[ ]"/>
+        <TextView
+            android:id="@+id/sourceView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#ffebebeb"
+            android:padding="5dp"
+            android:text="a = 3 + 4" />
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/outputFrame"
@@ -33,7 +44,7 @@
             android:id="@+id/outputConsoleView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#ffffffee"
+            android:background="#ffeeffff"
             android:padding="5dp"
             android:text="Hello World" />
     </FrameLayout>
