@@ -21,4 +21,6 @@ public class KernelReply {
         return msg_type;
     }
 
+    public JsonObject getContent() { return content; }
+
 }

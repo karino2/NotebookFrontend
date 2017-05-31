@@ -51,7 +51,7 @@ public class Kernel extends WebSocketListener {
    }
 
     void notifyMessageArrive() {
-        if(isWaiting || isReady())
+        if(isWaiting || !isReady())
             return;
         handleOneMessage();
     }
@@ -60,6 +60,8 @@ public class Kernel extends WebSocketListener {
         isWaiting = true;
 
         KernelMessage msg = messageQueue.remove();
+        msg.setSessionId(sessionId);
+
         Completable.create(emitter -> {
             webSocket.send(msg.toJson());
             emitter.onComplete();

@@ -1,8 +1,13 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +16,8 @@ import java.util.Map;
  */
 
 public class Cell {
+    public static final int EXEC_COUNT_RUNNING = -1;
+
     String cellType;
     JsonElement source;
     Integer executionCount;
@@ -37,6 +44,14 @@ public class Cell {
 
     }
 
+    public void setSource(String newContent) {
+        source = new JsonPrimitive(newContent);
+    }
+
+    public void setExecutionCount(int execCount) {
+        executionCount = execCount;
+    }
+
 
     static String mergeAll(List<String> texts) {
         StringBuilder buf = new StringBuilder();
@@ -57,7 +72,20 @@ public class Cell {
         public Map<String, JsonElement> data;
 
         public boolean isImage() {
-            return data != null;
+            if(data == null)
+                return false;
+            for(String key : data.keySet()) {
+                if(key.startsWith("image/png") ||
+                        key.startsWith("image/jpeg")) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void setData(JsonObject newData) {
+            Type dataType = new TypeToken<Map<String, JsonElement>>(){}.getType();
+            data = s_gson.fromJson(newData, dataType);
         }
 
         public String getImageAsBase64() {
@@ -70,10 +98,28 @@ public class Cell {
             return null;
         }
 
-        public String getText() {
-            return jsonElementToString(text);
+        public String getText()
+        {
+            if(data == null)
+                return jsonElementToString(text);
+            return jsonElementToString(data.get("text/plain"));
         }
 
+        public void appendResult(String newcontents) {
+            // in this case, output is cleared at first and text must be JsonArray.
+            JsonArray array = (JsonArray)text;
+            array.add(newcontents);
+        }
+
+    }
+
+    public void clearOutput() {
+        outputs.clear();
+        Output newoutput = new Output();
+        newoutput.outputType = "stream";
+        newoutput.name = "stdout";
+        newoutput.text = new JsonArray();
+        outputs.add(newoutput);
     }
 
     Output getOutput() {

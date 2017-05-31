@@ -31,6 +31,7 @@ public class CellView extends LinearLayout {
     ImageView outputImageView;
     FrameLayout outputFrame;
 
+    public Cell getBoundCell() { return cell; }
 
     public CellView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
@@ -69,7 +70,7 @@ public class CellView extends LinearLayout {
         sourceView.setText(cell.getSource());
 
         if(cell.executionCount != null) {
-            if(cell.executionCount == -1) {
+            if(cell.executionCount == Cell.EXEC_COUNT_RUNNING) {
                 execCountView.setText("[*]");
             } else {
                 execCountView.setText("[" + cell.executionCount + "]");

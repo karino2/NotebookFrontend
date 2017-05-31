@@ -19,12 +19,17 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 
 public class NotebookActivity extends Activity {
 
+    final int REQUEST_ACTIVITY_EDIT_ID = 1;
 
     ArrayAdapter<Cell> listAdapter;
     StateMachine stateMachine;
@@ -59,6 +64,13 @@ public class NotebookActivity extends Activity {
 
         messageQueue = new KernelMessageQueue();
 
+        lv.setOnItemClickListener((lview, cellview, pos, id)-> {
+            CellView cv = (CellView)cellview;
+            Intent editintent= new Intent(this, EditActivity.class);
+            editintent.putExtra("CELL_POSITION", pos);
+            editintent.putExtra("CELL_CONTENT", cv.getBoundCell().getSource());
+            startActivityForResult(editintent, REQUEST_ACTIVITY_EDIT_ID);
+        });
 
 
 
@@ -67,10 +79,6 @@ public class NotebookActivity extends Activity {
             showMessage("Intent null. NYI case.");
             return;
         }
-        /*
-        intent.putExtra("PORT", port);
-        intent.putExtra("IPYNB_PATH", path);
-        */
         int port = intent.getIntExtra("PORT", 51234);
         String path = intent.getStringExtra("IPYNB_PATH");
 
@@ -83,6 +91,71 @@ public class NotebookActivity extends Activity {
         bindNewContent(jsonContent);
         */
 
+
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == REQUEST_ACTIVITY_EDIT_ID) {
+            int cellpos = data.getIntExtra("CELL_POSITION", -1);
+            String content = data.getStringExtra("CELL_CONTENT");
+            Cell cell = listAdapter.getItem(cellpos);
+            cell.setSource(content);
+            cell.clearOutput();
+
+            // use OK as exec, cancel as just save. a little tricky.
+            if(resultCode == RESULT_OK && cell.getCellType() == Cell.CellType.CODE) {
+                executeCell(cell, content);
+            }
+            listAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private void executeCell(final Cell cell, String content) {
+        cell.setExecutionCount(Cell.EXEC_COUNT_RUNNING);
+        String msgid = StateMachine.uuid();
+
+        messageQueue.enqueue(new KernelMessage(msgid, "", content))
+                .filter(reply -> reply.getParentMessageId().equals(msgid))
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Observer<KernelReply>() {
+            Disposable disp;
+            @Override
+            public void onSubscribe(@NonNull Disposable d) {
+                disp = d;
+            }
+
+            @Override
+            public void onNext(@NonNull KernelReply kernelReply) {
+                handleKernelReply(kernelReply, cell, disp);
+            }
+
+            @Override
+            public void onError(@NonNull Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+    }
+
+    void handleKernelReply(KernelReply reply, Cell cell, Disposable disposable) {
+        JsonObject content = reply.getContent();
+        String repmsgtype = reply.getMessageType();
+        if("execute_input".equals(repmsgtype)) {
+            cell.setExecutionCount(content.get("execution_count").getAsInt());
+            listAdapter.notifyDataSetChanged();
+        }else if("stream".equals(repmsgtype)) {
+            cell.getOutput().appendResult(content.get("text").getAsString());
+            listAdapter.notifyDataSetChanged();
+        } else if("execute_result".equals(repmsgtype)) {
+            cell.getOutput().setData(content.get("data").getAsJsonObject());
+            listAdapter.notifyDataSetChanged();
+        }else if("execute_reply".equals(repmsgtype)) {
+            disposable.dispose();
+        }
 
     }
 
@@ -143,27 +216,6 @@ public class NotebookActivity extends Activity {
 
         }
         listAdapter.addAll(note.content.cells);
-                /*
-        Gson gson = new GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create();
-
-        JsonObject contentjson = gson.fromJson(jsonContent, JsonObject.class);
-
-        JsonElement cellsElem = contentjson.get("cells");
-        if(cellsElem == null) {
-        }
-        JsonArray cellsJson = cellsElem.getAsJsonArray();
-
-
-        List<Cell> cells = new ArrayList<Cell>();
-        for(JsonElement elem : cellsJson) {
-            Cell one = gson.fromJson(elem, Cell.class);
-            cells.add(one);
-
-        }
-        listAdapter.addAll(cells);
-        */
     }
 
     public static final String TEST_JSON_CONTENT = "{\"mimetype\": null, \"format\": \"json\", \"type\": \"notebook\", \"writable\": true, \"path\": \"test.ipynb\", \"content\": {\"metadata\": {\"kernelspec\": {\"display_name\": \"Python 3\", \"name\": \"python3\", \"language\": \"python\"}, \"language_info\": {\"mimetype\": \"text/x-python\", \"nbconvert_exporter\": \"python\", \"pygments_lexer\": \"ipython3\", \"version\": \"3.5.2\", \"file_extension\": \".py\", \"codemirror_mode\": {\"version\": 3, \"name\": \"ipython\"}, \"name\": \"python\"}}, \"nbformat_minor\": 0, \"nbformat\": 4, \"cells\": [{\"metadata\": {\"collapsed\": false, \"trusted\": true}, \"outputs\": [{\"output_type\": \"stream\", \"text\": \"Hello\\n\", \"name\": \"stdout\"}], \"source\": \"print(\\\"Hello\\\")\", \"cell_type\": \"code\", \"execution_count\": 1}, {\"metadata\": {\"collapsed\": true, \"trusted\": true}, \"outputs\": [], \"source\": \"\", \"cell_type\": \"code\", \"execution_count\": null}]}, \"created\": \"2017-05-30T03:39:14.787459+00:00\", \"last_modified\": \"2017-05-30T03:39:14.787459+00:00\", \"name\": \"test.ipynb\"}\n" +

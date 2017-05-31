@@ -25,6 +25,8 @@ public class KernelMessage {
         pythonCode = pycode;
     }
 
+    public void setSessionId(String sesid) { sessionId = sesid; }
+
     public String toJson() {
         //"{\"header\":{\"msg_id\":\"" + uuid() + "\",\"username\":\"username\",\"session\":\"" + sessionId + "\",\"msg_type\":\"execute_request\",\"version\":\"5.0\"},\"metadata\":{},\"content\":{\"code\":\"print(\\\"Hello\\\")\",\"silent\":false,\"store_history\":true,\"user_expressions\":{},\"allow_stdin\":true,\"stop_on_error\":true},\"buffers\":[],\"parent_header\":{},\"channel\":\"shell\"}";
         ByteArrayOutputStream bstream = new ByteArrayOutputStream();

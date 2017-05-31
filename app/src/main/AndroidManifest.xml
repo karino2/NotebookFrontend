@@ -18,9 +18,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".DebugActivity">
-        </activity>
-        <activity android:name=".NotebookActivity"></activity>
+        <activity android:name=".DebugActivity"></activity>
+        <activity android:name=".NotebookActivity" />
+        <activity android:name=".EditActivity"></activity>
     </application>
 
 </manifest>
