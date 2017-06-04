@@ -171,6 +171,8 @@ public class Cell {
     }
 
     Integer getExecCountForSave() {
+        if(executionCount == null)
+            return null;
         if(executionCount  == EXEC_COUNT_RUNNING)
             return null;
         return executionCount;

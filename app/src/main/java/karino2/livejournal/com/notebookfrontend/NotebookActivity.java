@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -131,6 +132,7 @@ public class NotebookActivity extends Activity {
                 switch(menuItem.getItemId()) {
                     case R.id.cut_item:
                     {
+                        isLastCutX = false;
                         cutCells.clear();
                         collectSelectedCells(cutCells);
                         for(Cell cell : cutCells) {
@@ -162,6 +164,11 @@ public class NotebookActivity extends Activity {
                         actionMode.finish();
                         return true;
                     }
+                    case R.id.paste_item: {
+                        pastCellsAt(getSelectedCellPosition());
+                        actionMode.finish();
+                        return true;
+                    }
                     case R.id.insert_above_item: {
                         insertNewCellAbove(getSelectedCellPosition());
                         actionMode.finish();
@@ -186,10 +193,12 @@ public class NotebookActivity extends Activity {
             public void onItemCheckedStateChanged(ActionMode actionMode, int i, long l, boolean b) {
                 if (getListView().getCheckedItemCount() != 1) {
                     actionMode.getMenu().findItem(R.id.change_item).setVisible(false);
+                    actionMode.getMenu().findItem(R.id.paste_item).setVisible(false);
                     actionMode.getMenu().findItem(R.id.insert_above_item).setVisible(false);
                     actionMode.getMenu().findItem(R.id.insert_below_item).setVisible(false);
                 } else {
                     actionMode.getMenu().findItem(R.id.change_item).setVisible(true);
+                    actionMode.getMenu().findItem(R.id.paste_item).setVisible(true);
                     actionMode.getMenu().findItem(R.id.insert_above_item).setVisible(true);
                     actionMode.getMenu().findItem(R.id.insert_below_item).setVisible(true);
                 }
@@ -260,6 +269,71 @@ public class NotebookActivity extends Activity {
         }
     }
 
+    boolean isLastCutX = false;
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        boolean withShift = ((event.getModifiers() & KeyEvent.META_SHIFT_ON) != 0);
+
+        switch(event.getKeyCode()) {
+            case KeyEvent.KEYCODE_A:
+            {
+                int pos = getListView().getSelectedItemPosition();
+                if(pos == ListView.INVALID_POSITION) {
+                    pos = 0;
+                }
+                insertNewCellAbove(pos);
+                return true;
+            }
+            case KeyEvent.KEYCODE_X:
+            {
+                int pos = getListView().getSelectedItemPosition();
+                if(pos == ListView.INVALID_POSITION) {
+                    return false;
+                }
+                if(!isLastCutX)
+                    cutCells.clear();
+                Cell cell = listAdapter.getItem(pos);
+                listAdapter.remove(cell);
+                cutCells.add(cell);
+                isLastCutX = true;
+                return true;
+            }
+            case KeyEvent.KEYCODE_V: {
+                int pos = getListView().getSelectedItemPosition();
+                if (pos == ListView.INVALID_POSITION) {
+                    return false;
+                }
+                pastCellsAt(pos);
+                return true;
+            }
+            case KeyEvent.KEYCODE_ENTER:
+            {
+                if(!withShift)
+                    return false;
+                int pos = getListView().getSelectedItemPosition();
+                if (pos == ListView.INVALID_POSITION) {
+                    return false;
+                }
+                executeCell(listAdapter.getItem(pos));
+                return true;
+            }
+
+        }
+
+
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void pastCellsAt(int pos) {
+        if(cutCells.isEmpty())
+            return;
+        for(int i = 0; i < cutCells.size(); i++) {
+            listAdapter.insert(cutCells.get(i), pos+i+1);
+        }
+        cutCells.clear();
+        isLastCutX = false;
+    }
 
     private void executeCell(final Cell cell) {
         cell.clearOutput();

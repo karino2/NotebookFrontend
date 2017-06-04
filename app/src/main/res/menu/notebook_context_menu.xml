@@ -26,5 +26,9 @@
         android:icon="@android:drawable/ic_menu_delete"
         android:showAsAction="ifRoom"
         tools:ignore="AppCompatResource"></item>
+    <item android:id="@+id/paste_item"
+        android:title="Paste"
+        android:showAsAction="ifRoom"
+        tools:ignore="AppCompatResource"></item>
 
 </menu>
