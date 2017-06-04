@@ -3,10 +3,14 @@ package karino2.livejournal.com.notebookfrontend;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.SparseBooleanArray;
+import android.view.ActionMode;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -15,6 +19,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.SortedSet;
 
 import io.reactivex.Completable;
 import io.reactivex.Observer;
@@ -22,6 +30,7 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -44,8 +53,7 @@ public class NotebookActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_notebook);
 
-        ListView lv = (ListView)findViewById(R.id.listView);
-
+        ListView lv = getListView();
 
 
         listAdapter = new ArrayAdapter<Cell>(this, 0) {
@@ -76,8 +84,12 @@ public class NotebookActivity extends Activity {
             startActivityForResult(editintent, REQUEST_ACTIVITY_EDIT_ID);
         });
 
+        lv.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
+        lv.setMultiChoiceModeListener(createMultiChoiceModeListener());
+
+
         findViewById(R.id.buttonNew).setOnClickListener(v-> {
-            addCellBelow(-1);
+            insertNewCellBelow(-1);
         });
 
 
@@ -91,24 +103,143 @@ public class NotebookActivity extends Activity {
         notebookPath = intent.getStringExtra("IPYNB_PATH");
 
         setupStateMachine(port, notebookPath);
-
-        /*
-
-
-        String jsonContent = TEST_JSON_CONTENT;
-        bindNewContent(jsonContent);
-        */
-
-
     }
 
-    private void addCellBelow(int selectedIdx) {
-        Gson gson = Note.getGson();
-        Cell newCell = gson.fromJson("{\"cell_type\":\"code\",\"source\":\"\",\"outputs\":[{\"name\":\"stdout\",\"output_type\":\"stream\",\"text\":\"\"}]}", Cell.class);
+    private ListView getListView() {
+        return (ListView)findViewById(R.id.listView);
+    }
+
+    List<Cell> cutCells = new ArrayList<Cell>();
+
+    @NonNull
+    private AbsListView.MultiChoiceModeListener createMultiChoiceModeListener() {
+        return new AbsListView.MultiChoiceModeListener() {
+            @Override
+            public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
+                MenuInflater inflater = actionMode.getMenuInflater();
+                inflater.inflate(R.menu.notebook_context_menu, menu);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode actionMode, Menu menu) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode actionMode, MenuItem menuItem) {
+                switch(menuItem.getItemId()) {
+                    case R.id.cut_item:
+                    {
+                        cutCells.clear();
+                        collectSelectedCells(cutCells);
+                        for(Cell cell : cutCells) {
+                            listAdapter.remove(cell);
+                        }
+                        actionMode.finish();
+                        return true;
+                    }
+                    case R.id.exec_item:
+                        ArrayList<Cell> cells = new ArrayList<>();
+                        collectSelectedCells(cells);
+                        for(Cell cell : cells) {
+                            executeCell(cell);
+                        }
+                        actionMode.finish();
+                        return true;
+                    case R.id.change_item: {
+                        int pos = getSelectedCellPosition();
+                        Cell selected = listAdapter.getItem(pos);
+                        Cell.CellType curtype = selected.getCellType();
+
+                        // I only suppose two cell type. If it becomes false, then we need to add list to select which cell type.
+                        if(curtype == Cell.CellType.MARKDOWN) {
+                            selected.setCellType(Cell.CellType.CODE);
+                        } else {
+                            selected.setCellType(Cell.CellType.MARKDOWN);
+                        }
+                        listAdapter.notifyDataSetChanged();
+                        actionMode.finish();
+                        return true;
+                    }
+                    case R.id.insert_above_item: {
+                        insertNewCellAbove(getSelectedCellPosition());
+                        actionMode.finish();
+                        return true;
+                    }
+                    case R.id.insert_below_item: {
+                        insertNewCellBelow(getSelectedCellPosition());
+                        actionMode.finish();
+                        return true;
+                    }
+                }
+                showMessage("NYI");
+                return false;
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode actionMode) {
+
+            }
+
+            @Override
+            public void onItemCheckedStateChanged(ActionMode actionMode, int i, long l, boolean b) {
+                if (getListView().getCheckedItemCount() != 1) {
+                    actionMode.getMenu().findItem(R.id.change_item).setVisible(false);
+                    actionMode.getMenu().findItem(R.id.insert_above_item).setVisible(false);
+                    actionMode.getMenu().findItem(R.id.insert_below_item).setVisible(false);
+                } else {
+                    actionMode.getMenu().findItem(R.id.change_item).setVisible(true);
+                    actionMode.getMenu().findItem(R.id.insert_above_item).setVisible(true);
+                    actionMode.getMenu().findItem(R.id.insert_below_item).setVisible(true);
+                }
+            }
+        };
+    }
+
+    private void collectSelectedCells(List<Cell> cells) {
+        ArrayList<Integer> cands = new ArrayList<>();
+
+        SparseBooleanArray sba = getListView().getCheckedItemPositions();
+        for(int i = 0; i < sba.size(); i++) {
+            if(sba.valueAt(i)) {
+                cands.add(sba.keyAt(i));
+            }
+        }
+        Collections.sort(cands);
+        for(int idx : cands) {
+            cells.add(listAdapter.getItem(idx));
+        }
+    }
+
+    int getSelectedCellPosition() {
+        SparseBooleanArray sba = getListView().getCheckedItemPositions();
+        for(int i = 0; i < sba.size(); i++) {
+            if(sba.valueAt(i)) {
+                return sba.keyAt(i);
+            }
+        }
+        return -1;
+    }
+
+    private void insertNewCellBelow(int selectedIdx) {
         int newIndex = selectedIdx +1;
         if(selectedIdx == -1) {
             newIndex = listAdapter.getCount();
         }
+        insertNewCell(newIndex);
+    }
+    private void insertNewCellAbove(int selectedIdx) {
+        int newIndex = selectedIdx;
+        if(selectedIdx == -1) {
+            newIndex = 0;
+        }
+        insertNewCell(newIndex);
+    }
+
+    private void insertNewCell(int newIndex) {
+        Gson gson = Note.getGson();
+        Cell newCell = gson.fromJson("{\"cell_type\":\"code\",\"source\":\"\",\"outputs\":[{\"name\":\"stdout\",\"output_type\":\"stream\",\"text\":\"\"}]}", Cell.class);
         listAdapter.insert(newCell, newIndex);
     }
 
@@ -123,19 +254,36 @@ public class NotebookActivity extends Activity {
 
             // use OK as exec, cancel as just save. a little tricky.
             if(resultCode == RESULT_OK && cell.getCellType() == Cell.CellType.CODE) {
-                executeCell(cell, content);
+                executeCell(cell);
             }
             listAdapter.notifyDataSetChanged();
         }
     }
 
-    private void executeCell(final Cell cell, String content) {
+    boolean filtertmp(KernelReply reply, String msgid) {
+        return reply.getParentMessageId().equals(msgid);
+    }
+
+    class FilterAction implements Predicate<KernelReply> {
+        String msgId;
+        FilterAction(String msgid) { msgId = msgid; }
+
+        @Override
+        public boolean test(@NonNull KernelReply kernelReply) throws Exception {
+            String parentId = kernelReply.getParentMessageId();
+            return kernelReply.getParentMessageId().equals(msgId);
+        }
+    }
+
+    private void executeCell(final Cell cell) {
+        cell.clearOutput();
         cell.setExecutionCount(Cell.EXEC_COUNT_RUNNING);
         String msgid = StateMachine.uuid();
 
-        messageQueue.enqueue(new KernelMessage(msgid, "", content))
-                .filter(reply -> reply.getParentMessageId().equals(msgid))
-        .subscribeOn(Schedulers.io())
+        messageQueue.enqueue(new KernelMessage(msgid, "", cell.getSource()))
+//                .filter(reply -> reply.getParentMessageId().equals(msgid))
+//                .filter(reply -> filtertmp(reply, msgid))
+                .filter(new FilterAction(msgid))
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Observer<KernelReply>() {
             Disposable disp;

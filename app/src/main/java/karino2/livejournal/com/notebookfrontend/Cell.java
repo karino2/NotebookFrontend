@@ -51,7 +51,7 @@ public class Cell {
         source = new JsonPrimitive(newContent);
     }
 
-    public void setExecutionCount(int execCount) {
+    public void setExecutionCount(Integer execCount) {
         executionCount = execCount;
     }
 
@@ -149,6 +149,19 @@ public class Cell {
         }
     }
 
+    public void setCellType(CellType newType) {
+        switch(newType) {
+            case CODE:
+                cellType = "code";
+                break;
+            case MARKDOWN:
+                cellType = "markdown";
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown cell type: " + newType);
+        }
+    }
+
     public void toJson(Gson gson, JsonWriter writer) throws IOException {
         if(CellType.MARKDOWN == getCellType()) {
             toJsonMarkdownCell(gson, writer);
@@ -157,10 +170,16 @@ public class Cell {
         }
     }
 
+    Integer getExecCountForSave() {
+        if(executionCount  == EXEC_COUNT_RUNNING)
+            return null;
+        return executionCount;
+    }
+
     private void toJsonCodeCell(Gson gson, JsonWriter writer) throws IOException {
         writer.beginObject();
         writer.name("cell_type").value("code")
-                .name("execution_count").value(executionCount);
+                .name("execution_count").value(getExecCountForSave());
 
 
         writeMetadata(gson, writer);

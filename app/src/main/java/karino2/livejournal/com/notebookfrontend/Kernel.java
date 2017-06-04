@@ -69,8 +69,12 @@ public class Kernel extends WebSocketListener {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(()-> {
                     isWaiting = false;
-                    if(!messageQueue.isEmpty())
-                        handleOneMessage();
+                    Completable.fromAction(()-> {
+                        if(!messageQueue.isEmpty())
+                            handleOneMessage();
+
+                    }).subscribeOn(Schedulers.io())
+                            .subscribe();
                 });
 
     }
