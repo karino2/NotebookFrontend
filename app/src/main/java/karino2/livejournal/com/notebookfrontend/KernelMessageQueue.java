@@ -45,6 +45,11 @@ public class KernelMessageQueue {
     }
 
     public KernelMessage remove() { return queue.remove(); }
+    public Queue<KernelMessage> detach() {
+        Queue<KernelMessage> cur = queue;
+        queue = new LinkedList<>();
+        return cur;
+    }
 
     public boolean isEmpty() { return queue.isEmpty(); }
 

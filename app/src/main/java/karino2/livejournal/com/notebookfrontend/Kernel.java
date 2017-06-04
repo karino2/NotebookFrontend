@@ -2,10 +2,15 @@ package karino2.livejournal.com.notebookfrontend;
 
 import com.google.gson.Gson;
 
+import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Completable;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -46,25 +51,42 @@ public class Kernel extends WebSocketListener {
         messageQueue.onReplyMessage(reply);
         // debugPrintTS("onMsg: " + text);
     }
-   boolean isReady() {
+
+    boolean isReady() {
        return webSocket != null;
    }
 
+    boolean isHandling = false;
     void notifyMessageArrive() {
-        if(!isReady())
+        if(!isReady() || isHandling || messageQueue.isEmpty())
             return;
-        long delayms = 0;
-        while(!messageQueue.isEmpty()){
-            KernelMessage msg = messageQueue.remove();
-            msg.setSessionId(sessionId);
+        isHandling = true;
+        Queue<KernelMessage> queue = messageQueue.detach();
+        Observable.fromIterable(queue)
+                    .subscribeOn(Schedulers.io())
+                .subscribe(new Observer<KernelMessage>() {
+                               @Override
+                               public void onSubscribe(@NonNull Disposable d) {
 
-            Completable.fromAction(() -> {
-                webSocket.send(msg.toJson());
-            }).delay(delayms, TimeUnit.MILLISECONDS)
-              .subscribeOn(Schedulers.io())
-              .subscribe();
-            delayms = 100;
-        }
+                               }
+
+                               @Override
+                               public void onNext(@NonNull KernelMessage msg) {
+                                   msg.setSessionId(sessionId);
+                                   webSocket.send(msg.toJson());
+                               }
+
+                               @Override
+                               public void onError(@NonNull Throwable e) {
+                                   isHandling = false;
+                               }
+
+                               @Override
+                               public void onComplete() {
+                                   isHandling = false;
+                                   notifyMessageArrive();
+                               }
+                           });
     }
 
 }
