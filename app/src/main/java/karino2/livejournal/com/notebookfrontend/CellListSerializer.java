@@ -46,7 +46,7 @@ public class CellListSerializer {
 
     // may be we should pass writer and write websocket on streaming manner, but first just return String.
     public String toJsonForSaveMessage() throws IOException {
-        Gson gson = Note.createGson();
+        Gson gson = Note.getGson();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         JsonWriter writer = new JsonWriter(new OutputStreamWriter(baos));
 

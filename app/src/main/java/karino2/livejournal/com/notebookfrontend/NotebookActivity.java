@@ -11,20 +11,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.Observer;
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
@@ -83,6 +76,10 @@ public class NotebookActivity extends Activity {
             startActivityForResult(editintent, REQUEST_ACTIVITY_EDIT_ID);
         });
 
+        findViewById(R.id.buttonNew).setOnClickListener(v-> {
+            addCellBelow(-1);
+        });
+
 
 
         Intent intent = getIntent();
@@ -103,6 +100,16 @@ public class NotebookActivity extends Activity {
         */
 
 
+    }
+
+    private void addCellBelow(int selectedIdx) {
+        Gson gson = Note.getGson();
+        Cell newCell = gson.fromJson("{\"cell_type\":\"code\",\"source\":\"\",\"outputs\":[{\"name\":\"stdout\",\"output_type\":\"stream\",\"text\":\"\"}]}", Cell.class);
+        int newIndex = selectedIdx +1;
+        if(selectedIdx == -1) {
+            newIndex = listAdapter.getCount();
+        }
+        listAdapter.insert(newCell, newIndex);
     }
 
     @Override

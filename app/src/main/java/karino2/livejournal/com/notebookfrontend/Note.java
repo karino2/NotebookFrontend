@@ -5,14 +5,11 @@ import android.support.annotation.NonNull;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonReader;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -38,15 +35,20 @@ public class Note {
     }
 
     public static Note fromJson(String buf) {
-        Gson gson = createGson();
+        Gson gson = getGson();
         return gson.fromJson(buf, Note.class);
     }
 
+
+    static Gson s_gson;
     @NonNull
-    public static Gson createGson() {
-        return new GsonBuilder()
+    public static Gson getGson() {
+        if(s_gson != null)
+            return s_gson;
+        s_gson =  new GsonBuilder()
                     .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
                     .create();
+        return s_gson;
     }
 
     public static Note fromJson(InputStream is) throws IOException {
