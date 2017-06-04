@@ -10,6 +10,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.observables.ConnectableObservable;
 
 /**
  * Created by _ on 2017/05/29.
@@ -33,7 +34,7 @@ public class KernelMessageQueue {
         public void subscribe(@NonNull ObservableEmitter<KernelReply> e) throws Exception {
             emitter = e;
         }
-    });
+    }).publish().autoConnect();
 
     public void onReplyMessage(KernelReply reply) {
         emitter.onNext(reply);

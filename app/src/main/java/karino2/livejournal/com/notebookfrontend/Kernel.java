@@ -2,6 +2,8 @@ package karino2.livejournal.com.notebookfrontend;
 
 import com.google.gson.Gson;
 
+import java.util.concurrent.TimeUnit;
+
 import io.reactivex.Completable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -16,8 +18,6 @@ import okhttp3.WebSocketListener;
 public class Kernel extends WebSocketListener {
     WebSocket webSocket;
     KernelMessageQueue messageQueue;
-
-    boolean isWaiting = false;
 
     String sessionId;
 
@@ -34,7 +34,7 @@ public class Kernel extends WebSocketListener {
         this.webSocket = webSocket;
 
         if(!messageQueue.isEmpty())
-            handleOneMessage();
+            notifyMessageArrive();
    }
 
    Gson gson = new Gson();
@@ -51,31 +51,20 @@ public class Kernel extends WebSocketListener {
    }
 
     void notifyMessageArrive() {
-        if(isWaiting || !isReady())
+        if(!isReady())
             return;
-        handleOneMessage();
+        long delayms = 0;
+        while(!messageQueue.isEmpty()){
+            KernelMessage msg = messageQueue.remove();
+            msg.setSessionId(sessionId);
+
+            Completable.fromAction(() -> {
+                webSocket.send(msg.toJson());
+            }).delay(delayms, TimeUnit.MILLISECONDS)
+              .subscribeOn(Schedulers.io())
+              .subscribe();
+            delayms = 100;
+        }
     }
 
-    void handleOneMessage() {
-        isWaiting = true;
-
-        KernelMessage msg = messageQueue.remove();
-        msg.setSessionId(sessionId);
-
-        Completable.create(emitter -> {
-            webSocket.send(msg.toJson());
-            emitter.onComplete();
-        }).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(()-> {
-                    isWaiting = false;
-                    Completable.fromAction(()-> {
-                        if(!messageQueue.isEmpty())
-                            handleOneMessage();
-
-                    }).subscribeOn(Schedulers.io())
-                            .subscribe();
-                });
-
-    }
 }

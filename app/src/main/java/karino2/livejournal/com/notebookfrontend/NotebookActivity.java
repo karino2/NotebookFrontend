@@ -260,20 +260,6 @@ public class NotebookActivity extends Activity {
         }
     }
 
-    boolean filtertmp(KernelReply reply, String msgid) {
-        return reply.getParentMessageId().equals(msgid);
-    }
-
-    class FilterAction implements Predicate<KernelReply> {
-        String msgId;
-        FilterAction(String msgid) { msgId = msgid; }
-
-        @Override
-        public boolean test(@NonNull KernelReply kernelReply) throws Exception {
-            String parentId = kernelReply.getParentMessageId();
-            return kernelReply.getParentMessageId().equals(msgId);
-        }
-    }
 
     private void executeCell(final Cell cell) {
         cell.clearOutput();
@@ -281,9 +267,7 @@ public class NotebookActivity extends Activity {
         String msgid = StateMachine.uuid();
 
         messageQueue.enqueue(new KernelMessage(msgid, "", cell.getSource()))
-//                .filter(reply -> reply.getParentMessageId().equals(msgid))
-//                .filter(reply -> filtertmp(reply, msgid))
-                .filter(new FilterAction(msgid))
+                .filter(reply -> reply.getParentMessageId().equals(msgid))
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Observer<KernelReply>() {
             Disposable disp;
