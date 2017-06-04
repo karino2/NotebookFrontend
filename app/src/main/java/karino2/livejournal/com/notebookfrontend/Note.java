@@ -1,5 +1,7 @@
 package karino2.livejournal.com.notebookfrontend;
 
+import android.support.annotation.NonNull;
+
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -36,10 +38,15 @@ public class Note {
     }
 
     public static Note fromJson(String buf) {
-        Gson gson = new GsonBuilder()
-                .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
-                .create();
+        Gson gson = createGson();
         return gson.fromJson(buf, Note.class);
+    }
+
+    @NonNull
+    public static Gson createGson() {
+        return new GsonBuilder()
+                    .setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES)
+                    .create();
     }
 
     public static Note fromJson(InputStream is) throws IOException {

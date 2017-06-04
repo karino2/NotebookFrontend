@@ -6,7 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonWriter;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,7 @@ public class Cell {
     JsonElement source;
     Integer executionCount;
     // metadata
+    JsonElement metadata;
 
     // always 1 element.
     List<Output> outputs;
@@ -64,12 +67,14 @@ public class Cell {
 
 
     public static class Output {
-        public String outputType;
-
         // (name, text) or data
         public String name = "";
+        public String outputType;
+
         public JsonElement text;
         public Map<String, JsonElement> data;
+
+        public Integer executionCount;
 
         public boolean isImage() {
             if(data == null)
@@ -141,6 +146,58 @@ public class Cell {
             return CellType.MARKDOWN;
         } else {
             return CellType.UNINITIALIZE;
+        }
+    }
+
+    public void toJson(Gson gson, JsonWriter writer) throws IOException {
+        if(CellType.MARKDOWN == getCellType()) {
+            toJsonMarkdownCell(gson, writer);
+        } else {
+            toJsonCodeCell(gson, writer);
+        }
+    }
+
+    private void toJsonCodeCell(Gson gson, JsonWriter writer) throws IOException {
+        writer.beginObject();
+        writer.name("cell_type").value("code")
+                .name("execution_count").value(executionCount);
+
+
+        writeMetadata(gson, writer);
+
+        writer.name("source")
+                .value(getSource());
+
+        writer.name("outputs")
+                .beginArray()
+                .jsonValue(gson.toJson(getOutput()))
+                .endArray();
+
+        writer.endObject();
+
+    }
+
+    private void toJsonMarkdownCell(Gson gson, JsonWriter writer) throws IOException {
+        //         {"metadata":{"collapsed":true},"cell_type":"markdown","source":"## Markdown cell\n\nHere is the test of markdown.\nNext line."},
+        writer.beginObject()
+                .name("cell_type").value("markdown");
+
+        writeMetadata(gson, writer);
+
+        writer.name("source").value(getSource());
+
+
+        writer.endObject();
+
+    }
+
+    private void writeMetadata(Gson gson, JsonWriter writer) throws IOException {
+        writer.name("metadata");
+
+        if(metadata == null) {
+            writer.beginObject().endObject();
+        } else {
+            writer.jsonValue(gson.toJson(metadata));
         }
     }
 

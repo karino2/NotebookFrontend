@@ -3,6 +3,8 @@ package karino2.livejournal.com.notebookfrontend;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -16,16 +18,23 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.Completable;
 import io.reactivex.Observer;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class NotebookActivity extends Activity {
 
@@ -34,6 +43,8 @@ public class NotebookActivity extends Activity {
     ArrayAdapter<Cell> listAdapter;
     StateMachine stateMachine;
     KernelMessageQueue messageQueue;
+
+    String notebookPath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,9 +91,9 @@ public class NotebookActivity extends Activity {
             return;
         }
         int port = intent.getIntExtra("PORT", 51234);
-        String path = intent.getStringExtra("IPYNB_PATH");
+        notebookPath = intent.getStringExtra("IPYNB_PATH");
 
-        setupStateMachine(port, path);
+        setupStateMachine(port, notebookPath);
 
         /*
 
@@ -218,7 +229,58 @@ public class NotebookActivity extends Activity {
         listAdapter.addAll(note.content.cells);
     }
 
-    public static final String TEST_JSON_CONTENT = "{\"mimetype\": null, \"format\": \"json\", \"type\": \"notebook\", \"writable\": true, \"path\": \"test.ipynb\", \"content\": {\"metadata\": {\"kernelspec\": {\"display_name\": \"Python 3\", \"name\": \"python3\", \"language\": \"python\"}, \"language_info\": {\"mimetype\": \"text/x-python\", \"nbconvert_exporter\": \"python\", \"pygments_lexer\": \"ipython3\", \"version\": \"3.5.2\", \"file_extension\": \".py\", \"codemirror_mode\": {\"version\": 3, \"name\": \"ipython\"}, \"name\": \"python\"}}, \"nbformat_minor\": 0, \"nbformat\": 4, \"cells\": [{\"metadata\": {\"collapsed\": false, \"trusted\": true}, \"outputs\": [{\"output_type\": \"stream\", \"text\": \"Hello\\n\", \"name\": \"stdout\"}], \"source\": \"print(\\\"Hello\\\")\", \"cell_type\": \"code\", \"execution_count\": 1}, {\"metadata\": {\"collapsed\": true, \"trusted\": true}, \"outputs\": [], \"source\": \"\", \"cell_type\": \"code\", \"execution_count\": null}]}, \"created\": \"2017-05-30T03:39:14.787459+00:00\", \"last_modified\": \"2017-05-30T03:39:14.787459+00:00\", \"name\": \"test.ipynb\"}\n" +
-            "\n";
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.notebook_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.save_item:
+                saveNotebook();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void saveNotebook() {
+        String baseUrl = stateMachine.baseHttpUrl();
+        String url = baseUrl + "/api/contents/" + notebookPath;
+
+        // TODO: synchronize.
+        CellListSerializer cls = new CellListSerializer();
+        for(int i = 0; i < listAdapter.getCount(); i++) {
+            cls.add(listAdapter.getItem(i));
+        }
+
+        String data;
+        try {
+            data = cls.toJsonForSaveMessage();
+        } catch (IOException e) {
+            showMessage("Fail to deserialize, never happen: " + e.getMessage());
+            return;
+        }
+
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), data);
+
+
+        Request request = new Request.Builder()
+                .url(url)
+                .put(body)
+                .build();
+
+        Completable.create(emitter -> {
+            Response resp = httpClient.newCall(request).execute();
+            emitter.onComplete();
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(() -> {
+                   showMessage("saved.") ;
+                });
+
+    }
 
 }
