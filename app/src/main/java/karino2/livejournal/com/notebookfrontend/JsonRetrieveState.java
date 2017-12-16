@@ -36,8 +36,7 @@ public class JsonRetrieveState implements  StateMachine.State {
     @Override
     public void begin(Bundle bundle) {
         String ipynbPath = bundle.getString("IPYNB_PATH");
-        String baseUrl = stateMachine.baseHttpUrl();
-        String url = baseUrl + "/api/notebooks/" + ipynbPath;
+        String url = stateMachine.buildUrl("/api/notebooks/" + ipynbPath);
 
         Request request = new Request.Builder()
                 .url(url)

@@ -3,6 +3,7 @@ package karino2.livejournal.com.notebookfrontend;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
 import android.view.KeyEvent;
@@ -23,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.SortedSet;
 
 import io.reactivex.Completable;
 import io.reactivex.Observer;
@@ -31,7 +31,6 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -102,8 +101,10 @@ public class NotebookActivity extends Activity {
         }
         int port = intent.getIntExtra("PORT", 51234);
         notebookPath = intent.getStringExtra("IPYNB_PATH");
+        String token = intent.getStringExtra("TOKEN");
 
-        setupStateMachine(port, notebookPath);
+
+        setupStateMachine(port, notebookPath, token);
     }
 
     private ListView getListView() {
@@ -378,16 +379,36 @@ public class NotebookActivity extends Activity {
             cell.getOutput().setData(content.get("data").getAsJsonObject());
             listAdapter.notifyDataSetChanged();
         }else if("execute_reply".equals(repmsgtype)) {
+            // once execute_reply is comming after execute_result, but now spec seems changed and execute_reply is comming before execute_result.
+            // so dispose() here discard result wrongly.
+            // we dispose on idle instead
+            // disposable.dispose();
+
+            Log.d("NotebookFrontend", "execute reply comming.");
+        } else if("idle".equals(repmsgtype)) {
             disposable.dispose();
+        } else {
+            // unknown message type.
+            Log.d("NotebookFrontend", repmsgtype);
         }
 
     }
 
-    OkHttpClient httpClient = new OkHttpClient();
+    OkHttpClient httpClient = null;
 
 
-    private void setupStateMachine(int port, String path) {
+    MyCookieJar cookieJar = new MyCookieJar();
+
+    private void setupStateMachine(int port, String path, String token) {
+        httpClient = new OkHttpClient.Builder()
+                .cookieJar(cookieJar)
+                .build();
+
         stateMachine.setPort(port);
+        stateMachine.setToken(token);
+        stateMachine.setCookieJar(cookieJar);
+
+        stateMachine.registerState(StateMachine.STATE_LOGIN, new LoginState(stateMachine, httpClient));
 
         JsonRetrieveState jsonState = new JsonRetrieveState(stateMachine, httpClient);
         jsonState.setJsonReceiver(json-> {
@@ -413,7 +434,7 @@ public class NotebookActivity extends Activity {
 
         Bundle bundle = new Bundle();
         bundle.putString("IPYNB_PATH", path);
-        stateMachine.gotoNextState(StateMachine.STATE_GET_BASE_JSON, bundle);
+        stateMachine.gotoNextState(StateMachine.STATE_LOGIN, bundle);
     }
 
     class KernelFactory implements Function<String, Kernel> {
@@ -460,8 +481,7 @@ public class NotebookActivity extends Activity {
     }
 
     private void saveNotebook() {
-        String baseUrl = stateMachine.baseHttpUrl();
-        String url = baseUrl + "/api/contents/" + notebookPath;
+        String url = stateMachine.buildUrl("/api/contents/" + notebookPath);
 
         // TODO: synchronize.
         CellListSerializer cls = new CellListSerializer();

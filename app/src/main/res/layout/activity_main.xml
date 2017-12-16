@@ -34,6 +34,20 @@
         android:inputType="textPersonName"
         android:text="test.ipynb" />
 
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="token"
+        android:textSize="24sp" />
+
+    <EditText
+        android:id="@+id/editTextToken"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:text="" />
+
     <Button
         android:id="@+id/buttonOpen"
         android:layout_width="match_parent"

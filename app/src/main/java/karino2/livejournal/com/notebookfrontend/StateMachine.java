@@ -1,9 +1,12 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 
 import java.util.HashMap;
 import java.util.Random;
+
+import okhttp3.HttpUrl;
 
 /**
  * Created by _ on 2017/05/28.
@@ -11,16 +14,23 @@ import java.util.Random;
 
 public class StateMachine {
     public static final int STATE_NONE = 0;
-    public static final int STATE_GET_BASE_JSON = 1;
-    public static final int STATE_CREATE_SESSION = 2;
-    public static final int STATE_CONNECT_TO_KERNEL = 3;
-    public static final int STATE_WAIT_MESSAGE = 4;
-    public static final int STATE_SEND_REQUEST = 5;
-    public static final int STATE_RESPONSE_RECDEIVE = 6;
+    public static final int STATE_LOGIN= 1;
+    public static final int STATE_GET_BASE_JSON = 2;
+    public static final int STATE_CREATE_SESSION = 3;
+    public static final int STATE_CONNECT_TO_KERNEL = 4;
+    public static final int STATE_WAIT_MESSAGE = 5;
+    public static final int STATE_SEND_REQUEST = 6;
+    public static final int STATE_RESPONSE_RECDEIVE = 7;
 
     int currentState = STATE_NONE;
     boolean changing = false;
     Bundle stateInit = null;
+
+    String token;
+
+    public void setToken(String token) {
+        this.token = token;
+    }
 
     public interface State {
         void begin(Bundle bundle);
@@ -81,12 +91,37 @@ public class StateMachine {
 
     // misc utility
 
-    public String baseHttpUrl() {
-        return "http://localhost:52688";
+    public String buildUrlWithToken(String method) {
+        String query = getQueryString();
+        return "http://localhost:" + port + method + query;
     }
 
+    public String buildUrl(String method) {
+        return "http://localhost:" + port + method;
+
+    }
+
+    @NonNull
+    private String getQueryString() {
+        String query = "";
+        if(!token.isEmpty()) {
+            query = "?token=" + token;
+        }
+        return query;
+    }
+
+    MyCookieJar cookieJar = null;
+    public void setCookieJar(MyCookieJar jar) {
+        cookieJar = jar;
+    }
+
+    public String getXSRFVal(HttpUrl url) {
+        return cookieJar.getXSRFVal(url);
+    }
+
+
     public String baseWsUrl() {
-        return "ws://localhost:52688";
+        return "ws://localhost:"+port;
     }
 
     public static String uuid() {

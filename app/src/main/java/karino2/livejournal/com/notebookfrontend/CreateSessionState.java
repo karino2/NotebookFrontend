@@ -5,6 +5,7 @@ import android.os.Bundle;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
+import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -30,14 +31,19 @@ public class CreateSessionState implements StateMachine.State {
         String name = bundle.getString("SESSION_ARG_NAME");
         String path = bundle.getString("SESSION_ARG_PATH");
 
-        String baseUrl = stateMachine.baseHttpUrl();
-        String url = baseUrl + "/api/sessions";
+        String url = stateMachine.buildUrl("/api/sessions");
 
         String requestbody = "{\"notebook\": {\"name\":\"" + name + "\", \"path\": \"" + path +"\"}}";
-        Request request = new Request.Builder()
+
+
+        Request.Builder builder = new Request.Builder()
                 .url(url)
-                .post(RequestBody.create(MediaType.parse("application/json") , requestbody))
-                .build();
+                .post(RequestBody.create(MediaType.parse("application/json") , requestbody));
+        String xsrf = stateMachine.getXSRFVal(HttpUrl.parse(url));
+        if(!xsrf.isEmpty()) {
+            builder.addHeader("X-XSRFToken", xsrf);
+        }
+        Request request = builder.build();
 
         Single.create(emitter -> {
             Response resp = httpClient.newCall(request).execute();
