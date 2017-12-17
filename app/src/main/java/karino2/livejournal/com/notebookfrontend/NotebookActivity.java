@@ -260,11 +260,13 @@ public class NotebookActivity extends Activity {
             String content = data.getStringExtra("CELL_CONTENT");
             Cell cell = listAdapter.getItem(cellpos);
             cell.setSource(content);
-            cell.clearOutput();
+            if(cell.getCellType() == Cell.CellType.CODE) {
+                cell.clearOutput();
 
-            // use OK as exec, cancel as just save. a little tricky.
-            if(resultCode == RESULT_OK && cell.getCellType() == Cell.CellType.CODE) {
-                executeCell(cell);
+                // use OK as exec, cancel as just save. a little tricky.
+                if (resultCode == RESULT_OK) {
+                    executeCell(cell);
+                }
             }
             listAdapter.notifyDataSetChanged();
         }
