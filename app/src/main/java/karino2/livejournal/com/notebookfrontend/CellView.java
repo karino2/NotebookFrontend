@@ -79,7 +79,7 @@ public class CellView extends LinearLayout {
 
         Cell.Output output = cell.getOutput();
         if(output == null) {
-            // no output, just return for a while.
+            setTextOutput("");
             return;
         }
         if(output.isImage()) {
