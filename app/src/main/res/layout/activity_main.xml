@@ -19,20 +19,6 @@
         android:inputType="number"
         android:text="52688" />
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="ipynb Path"
-        android:textSize="24sp" />
-
-    <EditText
-        android:id="@+id/editTextPath"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:text="test.ipynb" />
 
     <TextView
         android:id="@+id/textView3"

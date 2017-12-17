@@ -16,15 +16,11 @@ public class MainActivity extends Activity {
 
         findViewById(R.id.buttonOpen).setOnClickListener(v-> {
             int port = Integer.parseInt(findText(R.id.editTextPort));
-            String path = findText(R.id.editTextPath);
-
             String token = findText(R.id.editTextToken);
 
 
-            // Intent intent = new Intent(MainActivity.this, NotebookActivity.class);
             Intent intent = new Intent(MainActivity.this, TreeActivity.class);
             intent.putExtra("PORT", port);
-            intent.putExtra("IPYNB_PATH", path);
             intent.putExtra("TOKEN", token);
             startActivity(intent);
             // should I finish here?
