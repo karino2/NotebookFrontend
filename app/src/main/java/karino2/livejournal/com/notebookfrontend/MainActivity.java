@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.widget.EditText;
 
+import okhttp3.OkHttpClient;
+
 public class MainActivity extends Activity {
 
     @Override
@@ -18,7 +20,9 @@ public class MainActivity extends Activity {
 
             String token = findText(R.id.editTextToken);
 
-            Intent intent = new Intent(MainActivity.this, NotebookActivity.class);
+
+            // Intent intent = new Intent(MainActivity.this, NotebookActivity.class);
+            Intent intent = new Intent(MainActivity.this, TreeActivity.class);
             intent.putExtra("PORT", port);
             intent.putExtra("IPYNB_PATH", path);
             intent.putExtra("TOKEN", token);
@@ -27,6 +31,24 @@ public class MainActivity extends Activity {
         });
 
     }
+
+    static OkHttpClient httpClient = null;
+    static MyCookieJar cookieJar = new MyCookieJar();
+
+    public static MyCookieJar getCookieJar() {
+        return cookieJar;
+    }
+
+    public static OkHttpClient getHttpClient() {
+        if(httpClient == null) {
+            httpClient = new OkHttpClient.Builder()
+                    .cookieJar(cookieJar)
+                    .build();
+        }
+        return httpClient;
+    }
+
+
 
     String findText(int resId) {
         return ((EditText)findViewById(resId)).getText().toString();

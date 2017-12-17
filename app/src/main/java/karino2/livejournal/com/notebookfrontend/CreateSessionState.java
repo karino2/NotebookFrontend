@@ -54,7 +54,7 @@ public class CreateSessionState implements StateMachine.State {
                 .subscribe(arg-> {
                     Bundle newArg = new Bundle();
                     newArg.putString("SESSION_INFO_JSON", (String)arg);
-                    stateMachine.gotoNextState(StateMachine.STATE_CONNECT_TO_KERNEL, newArg);
+                    stateMachine.gotoNextState(NotebookStateMachine.STATE_CONNECT_TO_KERNEL, newArg);
                 });
 
     }

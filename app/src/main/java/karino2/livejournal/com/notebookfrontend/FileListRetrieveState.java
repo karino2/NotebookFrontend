@@ -11,14 +11,15 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Created by _ on 2017/05/28.
+ * Created by _ on 2017/12/16.
  */
 
-public class JsonRetrieveState implements  StateMachine.State {
+// similar to JsonRetrieveState, maybe refactoring later.
+public class FileListRetrieveState implements StateMachine.State{
     StateMachine stateMachine;
     OkHttpClient httpClient;
 
-    public JsonRetrieveState(StateMachine stmac, OkHttpClient client) {
+    public FileListRetrieveState(StateMachine stmac, OkHttpClient client) {
         stateMachine = stmac;
         httpClient = client;
     }
@@ -35,31 +36,30 @@ public class JsonRetrieveState implements  StateMachine.State {
 
     @Override
     public void begin(Bundle bundle) {
-        String ipynbPath = bundle.getString("IPYNB_PATH");
-        String url = stateMachine.buildUrl("/api/notebooks/" + ipynbPath);
+        String contentsPath = bundle.getString("CONTENTS_PATH");
+        String method = "/api/contents";
+        if(!contentsPath.isEmpty()) {
+            method = "/api/contents/" + contentsPath;
+        }
+
+        String url = stateMachine.buildUrl(method);
 
         Request request = new Request.Builder()
                 .url(url)
                 .get()
                 .build();
 
-        Log.d("NotebookFrontend", "json retrieve begin");
 
         Single.create(emitter -> {
             Response resp = httpClient.newCall(request).execute();
             String jsonString = resp.body().string();
 
-            Log.d("NotebookFrontend", "json retrieve response come");
             emitter.onSuccess(jsonString);
         }).subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(json -> {
-                    Log.d("NotebookFrontend", "json retrieve subscribe");
                     onJsonReceive.onStringCome((String)json);
-                    Bundle createSessionArg = new Bundle();
-                    createSessionArg.putString("SESSION_ARG_NAME", ipynbPath);
-                    createSessionArg.putString("SESSION_ARG_PATH", ipynbPath);
-                    stateMachine.gotoNextState(NotebookStateMachine.STATE_CREATE_SESSION, createSessionArg);
+                    stateMachine.gotoNextState(StateMachine.STATE_NONE, new Bundle());
                 });
 
     }

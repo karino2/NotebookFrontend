@@ -4,8 +4,10 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
+import okhttp3.Cookie;
 import okhttp3.HttpUrl;
 
 /**
@@ -15,12 +17,6 @@ import okhttp3.HttpUrl;
 public class StateMachine {
     public static final int STATE_NONE = 0;
     public static final int STATE_LOGIN= 1;
-    public static final int STATE_GET_BASE_JSON = 2;
-    public static final int STATE_CREATE_SESSION = 3;
-    public static final int STATE_CONNECT_TO_KERNEL = 4;
-    public static final int STATE_WAIT_MESSAGE = 5;
-    public static final int STATE_SEND_REQUEST = 6;
-    public static final int STATE_RESPONSE_RECDEIVE = 7;
 
     int currentState = STATE_NONE;
     boolean changing = false;
@@ -31,6 +27,8 @@ public class StateMachine {
     public void setToken(String token) {
         this.token = token;
     }
+    public String getToken() { return token; }
+
 
     public interface State {
         void begin(Bundle bundle);
@@ -53,6 +51,7 @@ public class StateMachine {
     public void setPort(int port) {
         this.port = port;
     }
+    public int getPort() { return port; }
 
     public void registerNullState(int stateVal) {
         registerState(stateVal, nullState);
@@ -99,6 +98,12 @@ public class StateMachine {
     public String buildUrl(String method) {
         return "http://localhost:" + port + method;
 
+    }
+
+    public boolean isCookieExist(String url) {
+        HttpUrl httpUrl = HttpUrl.parse(url);
+        List<Cookie> cookies = cookieJar.loadForRequest(httpUrl);
+        return !cookies.isEmpty();
     }
 
     @NonNull

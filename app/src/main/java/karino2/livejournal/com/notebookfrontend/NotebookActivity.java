@@ -43,7 +43,7 @@ public class NotebookActivity extends Activity {
     final int REQUEST_ACTIVITY_EDIT_ID = 1;
 
     ArrayAdapter<Cell> listAdapter;
-    StateMachine stateMachine;
+    NotebookStateMachine stateMachine;
     KernelMessageQueue messageQueue;
 
     String notebookPath;
@@ -72,7 +72,7 @@ public class NotebookActivity extends Activity {
             }
         };
         lv.setAdapter(listAdapter);
-        stateMachine = new StateMachine();
+        stateMachine = new NotebookStateMachine();
 
         messageQueue = new KernelMessageQueue();
 
@@ -394,15 +394,9 @@ public class NotebookActivity extends Activity {
 
     }
 
-    OkHttpClient httpClient = null;
-
-
-    MyCookieJar cookieJar = new MyCookieJar();
-
     private void setupStateMachine(int port, String path, String token) {
-        httpClient = new OkHttpClient.Builder()
-                .cookieJar(cookieJar)
-                .build();
+        OkHttpClient httpClient = MainActivity.getHttpClient();
+        MyCookieJar cookieJar = MainActivity.getCookieJar();
 
         stateMachine.setPort(port);
         stateMachine.setToken(token);
@@ -414,10 +408,10 @@ public class NotebookActivity extends Activity {
         jsonState.setJsonReceiver(json-> {
             bindNewContent(json);
         });
-        stateMachine.registerState(StateMachine.STATE_GET_BASE_JSON, jsonState);
-        stateMachine.registerState(StateMachine.STATE_CREATE_SESSION, new CreateSessionState(stateMachine, httpClient));
-        stateMachine.registerState(StateMachine.STATE_CONNECT_TO_KERNEL, new ConnectToKernelState(stateMachine, httpClient, sesid-> new Kernel(sesid, messageQueue)));
-        stateMachine.registerState(StateMachine.STATE_WAIT_MESSAGE, new StateMachine.State() {
+        stateMachine.registerState(NotebookStateMachine.STATE_GET_BASE_JSON, jsonState);
+        stateMachine.registerState(NotebookStateMachine.STATE_CREATE_SESSION, new CreateSessionState(stateMachine, httpClient));
+        stateMachine.registerState(NotebookStateMachine.STATE_CONNECT_TO_KERNEL, new ConnectToKernelState(stateMachine, httpClient, sesid-> new Kernel(sesid, messageQueue)));
+        stateMachine.registerState(NotebookStateMachine.STATE_WAIT_MESSAGE, new StateMachine.State() {
             @Override
             public void begin(Bundle bundle) {
                 showMessage("wait message start!");
@@ -431,9 +425,10 @@ public class NotebookActivity extends Activity {
             }
         });
 
-
         Bundle bundle = new Bundle();
         bundle.putString("IPYNB_PATH", path);
+        bundle.putInt("NEXT_STATE", NotebookStateMachine.STATE_GET_BASE_JSON);
+
         stateMachine.gotoNextState(StateMachine.STATE_LOGIN, bundle);
     }
 
@@ -481,6 +476,8 @@ public class NotebookActivity extends Activity {
     }
 
     private void saveNotebook() {
+        OkHttpClient httpClient = MainActivity.getHttpClient();
+
         String url = stateMachine.buildUrl("/api/contents/" + notebookPath);
 
         // TODO: synchronize.

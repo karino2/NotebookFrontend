@@ -55,7 +55,7 @@ public class ConnectToKernelState implements StateMachine.State {
                 .subscribe(() -> {
                     Bundle newArg = new Bundle();
                     newArg.putString("SESSION_ID", sessionId);
-                    stateMachine.gotoNextState(StateMachine.STATE_WAIT_MESSAGE, newArg);
+                    stateMachine.gotoNextState(NotebookStateMachine.STATE_WAIT_MESSAGE, newArg);
                 });
 
 

@@ -25,12 +25,19 @@ public class LoginState implements StateMachine.State  {
 
     @Override
     public void begin(Bundle bundle) {
+
+        int nextState = bundle.getInt("NEXT_STATE");
+
         // send request to tree to get cookie.
         String url = stateMachine.buildUrlWithToken("/tree");
 
-        // just pass through next state.
-        String ipynbPath = bundle.getString("IPYNB_PATH");
+        if(stateMachine.isCookieExist(url)) {
+            // already logined. goto next state.
 
+            // pass through bundle (IPYNB_PATH).
+            stateMachine.gotoNextState(nextState, bundle);
+            return;
+        }
 
 
         Request request = new Request.Builder()
@@ -50,9 +57,9 @@ public class LoginState implements StateMachine.State  {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(json -> {
                     Log.d("NotebookFrontend", "login done");
-                    Bundle createSessionArg = new Bundle();
-                    bundle.putString("IPYNB_PATH", ipynbPath);
-                    stateMachine.gotoNextState(StateMachine.STATE_GET_BASE_JSON, bundle);
+
+                    // pass through bundle (IPYNB_PATH).
+                    stateMachine.gotoNextState(nextState, bundle);
                 });
 
     }

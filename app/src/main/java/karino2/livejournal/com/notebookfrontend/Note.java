@@ -57,7 +57,7 @@ public class Note {
         return fromJson(json);
     }
 
-    private static String readAll(InputStream is) throws IOException {
+    public static String readAll(InputStream is) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
         StringBuffer buf = new StringBuffer();
 
