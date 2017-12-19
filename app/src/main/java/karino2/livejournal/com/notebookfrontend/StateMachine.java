@@ -9,6 +9,7 @@ import java.util.Random;
 
 import okhttp3.Cookie;
 import okhttp3.HttpUrl;
+import okhttp3.Request;
 
 /**
  * Created by _ on 2017/05/28.
@@ -118,6 +119,13 @@ public class StateMachine {
     MyCookieJar cookieJar = null;
     public void setCookieJar(MyCookieJar jar) {
         cookieJar = jar;
+    }
+
+    public void ensureXSRFParam(Request.Builder builder, String url) {
+        String xsrf = getXSRFVal(HttpUrl.parse(url));
+        if(!xsrf.isEmpty()) {
+            builder.addHeader("X-XSRFToken", xsrf);
+        }
     }
 
     public String getXSRFVal(HttpUrl url) {

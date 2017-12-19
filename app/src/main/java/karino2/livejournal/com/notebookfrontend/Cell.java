@@ -68,13 +68,46 @@ public class Cell {
 
     public static class Output {
         // (name, text) or data
-        public String name = "";
+
+        // name is deleted? just comment out for a while.
+        // public String name = "";
+
         public String outputType;
 
         public JsonElement text;
         public Map<String, JsonElement> data;
 
         public Integer executionCount;
+
+        // now metadata seems to become MUST.
+        // {"metadata":{},"data":{"text/plain":"7"},"output_type":"execute_result","execution_count":1}
+        public void writeToJson(Gson gson, JsonWriter writer) throws IOException {
+
+            // these days, validation is rigid. just support what I met.
+            // based on https://ipython.org/ipython-doc/3/notebook/nbformat.html
+            if("execute_result".equals(outputType)) {
+                writer.beginObject()
+                        .name("metadata")
+                        .beginObject().endObject()
+                        .name("data")
+                        .jsonValue(gson.toJson(data))
+                        .name("output_type")
+                        .value(outputType)
+                        .name("execution_count")
+                        .value(executionCount)
+                        .endObject();
+            }else if("stream".equals(outputType)) {
+                writer.beginObject()
+                    .name("output_type")
+                    .value(outputType)
+                    .name("name")
+                        .value("stdout")
+                    .name("text")
+                    .jsonValue(gson.toJson(text))
+                    .endObject();
+            }
+        }
+
 
         public boolean isImage() {
             if(data == null)
@@ -88,7 +121,13 @@ public class Cell {
             return false;
         }
 
-        public void setData(JsonObject newData) {
+        public void setResult(Integer newExecCount, JsonObject  newData) {
+            setData(newData);
+            outputType = "execute_result";
+            executionCount = newExecCount;
+        }
+
+        void setData(JsonObject newData) {
             Type dataType = new TypeToken<Map<String, JsonElement>>(){}.getType();
             data = s_gson.fromJson(newData, dataType);
         }
@@ -122,7 +161,7 @@ public class Cell {
         outputs.clear();
         Output newoutput = new Output();
         newoutput.outputType = "stream";
-        newoutput.name = "stdout";
+        // newoutput.name = "stdout";
         newoutput.text = new JsonArray();
         outputs.add(newoutput);
     }
@@ -190,13 +229,24 @@ public class Cell {
                 .value(getSource());
 
         writer.name("outputs")
-                .beginArray()
-                .jsonValue(gson.toJson(getOutput()))
-                .endArray();
+                .beginArray();
+        writeOutput(gson, writer);
+        writer.endArray();
+
 
         writer.endObject();
 
     }
+
+    void writeOutput(Gson gson, JsonWriter writer) throws IOException {
+        Output o = getOutput();
+        if(o == null) {
+            return;
+        }
+        o.writeToJson(gson, writer);
+
+    }
+
 
     private void toJsonMarkdownCell(Gson gson, JsonWriter writer) throws IOException {
         //         {"metadata":{"collapsed":true},"cell_type":"markdown","source":"## Markdown cell\n\nHere is the test of markdown.\nNext line."},

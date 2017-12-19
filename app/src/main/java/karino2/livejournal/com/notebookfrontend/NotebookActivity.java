@@ -378,7 +378,7 @@ public class NotebookActivity extends Activity {
             cell.getOutput().appendResult(content.get("text").getAsString());
             listAdapter.notifyDataSetChanged();
         } else if("execute_result".equals(repmsgtype)) {
-            cell.getOutput().setData(content.get("data").getAsJsonObject());
+            cell.getOutput().setResult(cell.getExecCountForSave(), content.get("data").getAsJsonObject());
             listAdapter.notifyDataSetChanged();
         }else if("execute_reply".equals(repmsgtype)) {
             // once execute_reply is comming after execute_result, but now spec seems changed and execute_reply is comming before execute_result.
@@ -498,11 +498,13 @@ public class NotebookActivity extends Activity {
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), data);
 
-
-        Request request = new Request.Builder()
+        Request.Builder builder = new Request.Builder()
                 .url(url)
-                .put(body)
-                .build();
+                .put(body);
+
+        stateMachine.ensureXSRFParam(builder, url);
+
+        Request request = builder.build();
 
         Completable.create(emitter -> {
             Response resp = httpClient.newCall(request).execute();

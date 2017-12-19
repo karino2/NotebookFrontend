@@ -39,10 +39,7 @@ public class CreateSessionState implements StateMachine.State {
         Request.Builder builder = new Request.Builder()
                 .url(url)
                 .post(RequestBody.create(MediaType.parse("application/json") , requestbody));
-        String xsrf = stateMachine.getXSRFVal(HttpUrl.parse(url));
-        if(!xsrf.isEmpty()) {
-            builder.addHeader("X-XSRFToken", xsrf);
-        }
+        stateMachine.ensureXSRFParam(builder, url);
         Request request = builder.build();
 
         Single.create(emitter -> {
