@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -15,7 +17,14 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import io.reactivex.Completable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class TreeActivity extends Activity {
 
@@ -86,6 +95,51 @@ public class TreeActivity extends Activity {
 
     }
 
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.tree_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.new_item:
+                createNewBook();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void createNewBook() {
+        OkHttpClient httpClient = MainActivity.getHttpClient();
+
+        String url = stateMachine.buildUrl("/api/contents");
+
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), "{\"type\": \"notebook\"}");
+
+        Request.Builder builder = new Request.Builder()
+                .url(url)
+                .post(body);
+
+        stateMachine.ensureXSRFParam(builder, url);
+
+        Request request = builder.build();
+
+        Completable.create(emitter -> {
+            Response resp = httpClient.newCall(request).execute();
+            emitter.onComplete();
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(() -> {
+                    showMessage("new file.") ;
+                    // TODO: check current state.
+                    gotoLoginState();
+                });
+
+    }
+
     private void openBook(String path) {
         Intent intent = new Intent(this, NotebookActivity.class);
         intent.putExtra("PORT", stateMachine.getPort());
@@ -118,6 +172,7 @@ public class TreeActivity extends Activity {
                 Gson gson = new Gson();
                 directory = gson.fromJson(resp, Directory.class);
 
+                listAdapter.clear();
                 listAdapter.addAll(directory.content);
                 // listAdapter.notifyDataSetChanged();
             }
@@ -133,7 +188,10 @@ public class TreeActivity extends Activity {
         });
 
 
+        gotoLoginState();
+    }
 
+    private void gotoLoginState() {
         Bundle bundle = new Bundle();
         bundle.putString("CONTENTS_PATH", "");
         bundle.putInt("NEXT_STATE", TreeStateMachine.STATE_GET_BASE_DIRECTORY);
