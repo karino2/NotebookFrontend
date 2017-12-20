@@ -110,6 +110,9 @@ public class NotebookActivity extends Activity {
         }
         int port = intent.getIntExtra("PORT", 51234);
         notebookPath = intent.getStringExtra("IPYNB_PATH");
+
+        getActionBar().setTitle(notebookPath);
+
         String token = intent.getStringExtra("TOKEN");
 
 
@@ -552,6 +555,7 @@ public class NotebookActivity extends Activity {
             stateMachine.sendRequest(url, builder, () -> {
                 showMessage("renamed.") ;
                 notebookPath = newBookName;
+                getActionBar().setTitle(notebookPath);
             });
 
         } catch (IOException e) {
