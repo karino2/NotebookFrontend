@@ -1,12 +1,16 @@
 package karino2.livejournal.com.notebookfrontend;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -14,13 +18,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.stream.JsonWriter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -41,6 +49,7 @@ import okhttp3.Response;
 public class NotebookActivity extends Activity {
 
     final int REQUEST_ACTIVITY_EDIT_ID = 1;
+    final int RENAME_DIALOG_ID = 2;
 
     ArrayAdapter<Cell> listAdapter;
     NotebookStateMachine stateMachine;
@@ -472,10 +481,86 @@ public class NotebookActivity extends Activity {
         switch(item.getItemId()) {
             case R.id.save_item:
                 saveNotebook();
-                break;
+                return true;
+            case R.id.rename_item:
+                Bundle args = new Bundle();
+                args.putString("BOOK_NAME", notebookPath);
+                showDialog(RENAME_DIALOG_ID, args);
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
+
+    @Override
+    protected void onPrepareDialog(int id, Dialog dialog, Bundle args) {
+        super.onPrepareDialog(id, dialog, args);
+        switch(id) {
+            case RENAME_DIALOG_ID:
+                EditText et = (EditText)dialog.findViewById(R.id.book_name_edit);
+                et.setText(args.getString("BOOK_NAME"));
+                break;
+        }
+    }
+
+    @Override
+    protected Dialog onCreateDialog(int id, Bundle args) {
+        switch(id) {
+            case RENAME_DIALOG_ID:
+                LayoutInflater factory = LayoutInflater.from(this);
+                final View textEntryView = factory.inflate(R.layout.rename_book_entry, null);
+                return new AlertDialog.Builder(this).setTitle("Rename Book")
+                        .setView(textEntryView)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                EditText et = (EditText)textEntryView.findViewById(R.id.book_name_edit);
+                                String newBookName = et.getText().toString();
+
+                                renameNotebook(newBookName);
+                            }
+                        })
+                        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                            }
+                        })
+                        .create();
+
+        }
+        return super.onCreateDialog(id, args);
+    }
+
+    private void renameNotebook(String newBookName) {
+        String url = stateMachine.buildUrl("/api/contents/" + notebookPath);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        JsonWriter writer = new JsonWriter(new OutputStreamWriter(baos));
+        try {
+            // {path: "RenameTest2.ipynb"}
+            writer.beginObject()
+                    .name("path")
+                    .value(newBookName)
+                    .endObject();
+            writer.close();
+            String content = baos.toString("UTF-8");
+
+            RequestBody body = RequestBody.create(MediaType.parse("application/json"), content);
+
+            Request.Builder builder = new Request.Builder()
+                    .url(url)
+                    .patch(body);
+
+
+            stateMachine.sendRequest(url, builder, () -> {
+                showMessage("renamed.") ;
+                notebookPath = newBookName;
+            });
+
+        } catch (IOException e) {
+            showMessage("IO Exception, never happen for our case. " + e.getMessage());
+        }
+
+
+    }
+
 
     private void saveNotebook() {
 

@@ -6,4 +6,8 @@
             android:icon="@android:drawable/ic_menu_save"
             android:showAsAction="ifRoom"
             tools:ignore="AppCompatResource"></item>
+        <item android:id="@+id/rename_item"
+            android:title="Rename"
+            android:showAsAction="ifRoom"
+            tools:ignore="AppCompatResource"></item>
 </menu>

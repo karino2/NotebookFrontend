@@ -175,7 +175,11 @@ public class TreeActivity extends Activity {
             }
         });
 
+    }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
         gotoLoginState();
     }
 
