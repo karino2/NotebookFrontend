@@ -7,9 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import io.reactivex.Completable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Action;
+import io.reactivex.schedulers.Schedulers;
 import okhttp3.Cookie;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Created by _ on 2017/05/28.
@@ -148,6 +154,20 @@ public class StateMachine {
         return buf.toString();
     }
 
+    public void sendRequest(String url, Request.Builder builder, Action onAfter) {
+        OkHttpClient httpClient = MainActivity.getHttpClient();
+
+        ensureXSRFParam(builder, url);
+
+        Request request = builder.build();
+
+        Completable.create(emitter -> {
+            Response resp = httpClient.newCall(request).execute();
+            emitter.onComplete();
+        }).subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(onAfter);
+    }
 
 
 }

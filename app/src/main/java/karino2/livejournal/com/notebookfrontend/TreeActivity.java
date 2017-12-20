@@ -17,14 +17,11 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
-import io.reactivex.Completable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.schedulers.Schedulers;
+import io.reactivex.functions.Action;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class TreeActivity extends Activity {
 
@@ -113,8 +110,6 @@ public class TreeActivity extends Activity {
     }
 
     private void createNewBook() {
-        OkHttpClient httpClient = MainActivity.getHttpClient();
-
         String url = stateMachine.buildUrl("/api/contents");
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), "{\"type\": \"notebook\"}");
@@ -123,20 +118,13 @@ public class TreeActivity extends Activity {
                 .url(url)
                 .post(body);
 
-        stateMachine.ensureXSRFParam(builder, url);
+        Action onAfter = () -> {
+            showMessage("new file.") ;
+            // TODO: check current state.
+            gotoLoginState();
+        };
 
-        Request request = builder.build();
-
-        Completable.create(emitter -> {
-            Response resp = httpClient.newCall(request).execute();
-            emitter.onComplete();
-        }).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(() -> {
-                    showMessage("new file.") ;
-                    // TODO: check current state.
-                    gotoLoginState();
-                });
+        stateMachine.sendRequest(url, builder, onAfter);
 
     }
 

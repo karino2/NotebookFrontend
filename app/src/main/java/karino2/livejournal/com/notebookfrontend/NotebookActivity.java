@@ -478,7 +478,6 @@ public class NotebookActivity extends Activity {
     }
 
     private void saveNotebook() {
-        OkHttpClient httpClient = MainActivity.getHttpClient();
 
         String url = stateMachine.buildUrl("/api/contents/" + notebookPath);
 
@@ -502,18 +501,10 @@ public class NotebookActivity extends Activity {
                 .url(url)
                 .put(body);
 
-        stateMachine.ensureXSRFParam(builder, url);
 
-        Request request = builder.build();
-
-        Completable.create(emitter -> {
-            Response resp = httpClient.newCall(request).execute();
-            emitter.onComplete();
-        }).subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(() -> {
-                   showMessage("saved.") ;
-                });
+        stateMachine.sendRequest(url, builder, () -> {
+            showMessage("saved.") ;
+        });
 
     }
 
