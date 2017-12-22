@@ -10,6 +10,7 @@ import com.google.gson.stream.JsonWriter;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,6 +80,17 @@ public class Cell {
 
         public Integer executionCount;
 
+        // for error
+        String ename;
+        String evalue;
+        JsonArray traceback;
+        public void setError(String ename, String evalue, JsonArray traceback) {
+            outputType = "error";
+            this.ename = ename;
+            this.evalue = evalue;
+            this.traceback = traceback;
+        }
+
         // now metadata seems to become MUST.
         // {"metadata":{},"data":{"text/plain":"7"},"output_type":"execute_result","execution_count":1}
         public void writeToJson(Gson gson, JsonWriter writer) throws IOException {
@@ -105,6 +117,18 @@ public class Cell {
                     .name("text")
                     .jsonValue(gson.toJson(text))
                     .endObject();
+            }else if("error".equals(outputType)) {
+                writer.beginObject()
+                        .name("output_type")
+                        .value(outputType)
+                        .name("evalue")
+                        .value(evalue)
+                        .name("ename")
+                        .value(ename)
+                        .name("traceback")
+                        .jsonValue(gson.toJson(traceback))
+                    .endObject();
+
             }
         }
 
@@ -144,9 +168,29 @@ public class Cell {
 
         public String getText()
         {
+            if("error".equals(outputType)) {
+                return buildErrorText();
+            }
+
             if(data == null)
                 return jsonElementToString(text);
             return jsonElementToString(data.get("text/plain"));
+        }
+
+        private String buildErrorText() {
+            List<String> traces = s_gson.fromJson(traceback, List.class);
+
+
+            StringBuilder buf = new StringBuilder();
+            for(String source : traces) {
+                buf.append(source);
+                buf.append("\n");
+            }
+
+            buf.append("\n");
+            buf.append(ename).append(":").append(evalue);
+
+            return buf.toString();
         }
 
         public void appendResult(String newcontents) {

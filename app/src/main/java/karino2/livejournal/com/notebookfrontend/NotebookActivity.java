@@ -395,6 +395,9 @@ public class NotebookActivity extends Activity {
         if("execute_input".equals(repmsgtype)) {
             cell.setExecutionCount(content.get("execution_count").getAsInt());
             listAdapter.notifyDataSetChanged();
+        }else if("error".equals(repmsgtype)) {
+            cell.getOutput().setError(content.get("ename").getAsString(), content.get("evalue").getAsString(), content.get("traceback").getAsJsonArray());
+            listAdapter.notifyDataSetChanged();
         }else if("stream".equals(repmsgtype)) {
             cell.getOutput().appendResult(content.get("text").getAsString());
             listAdapter.notifyDataSetChanged();
