@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
@@ -17,10 +18,20 @@ public class EditActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
 
+        EditText et = (EditText)findViewById(R.id.editText);
+        et.setOnKeyListener((v, keyCode, e)-> {
+            if(keyCode == KeyEvent.KEYCODE_ENTER && e.getAction() == KeyEvent.ACTION_DOWN &&
+                    e.isShiftPressed()) {
+                finshAndExecute();
+                return true;
+            }
+            return false;
+        });
+
+
         Intent intent = getIntent();
         if(intent != null) {
             cellPosition = intent.getIntExtra("CELL_POSITION", -1);
-            EditText et = (EditText)findViewById(R.id.editText);
             et.setText(intent.getStringExtra("CELL_CONTENT"));
         }
     }
@@ -37,14 +48,18 @@ public class EditActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.exec_item:
-                Intent intent = getResultIntent();
-                setResult(RESULT_OK, intent);
-                finish();
+                finshAndExecute();
                 break;
         }
         return super.onOptionsItemSelected(item);
 
 }
+
+    private void finshAndExecute() {
+        Intent intent = getResultIntent();
+        setResult(RESULT_OK, intent);
+        finish();
+    }
 
     @NonNull
     private Intent getResultIntent() {

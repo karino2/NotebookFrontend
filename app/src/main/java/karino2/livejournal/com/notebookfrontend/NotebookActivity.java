@@ -300,6 +300,15 @@ public class NotebookActivity extends Activity {
                 insertNewCellAbove(pos);
                 return true;
             }
+            case KeyEvent.KEYCODE_B:
+            {
+                int pos = getListView().getSelectedItemPosition();
+                if(pos == ListView.INVALID_POSITION) {
+                    pos = -1;
+                }
+                insertNewCellBelow(pos);
+                return true;
+            }
             case KeyEvent.KEYCODE_X:
             {
                 int pos = getListView().getSelectedItemPosition();
