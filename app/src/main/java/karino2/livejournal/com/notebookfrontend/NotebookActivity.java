@@ -401,6 +401,9 @@ public class NotebookActivity extends Activity {
         }else if("stream".equals(repmsgtype)) {
             cell.getOutput().appendResult(content.get("text").getAsString());
             listAdapter.notifyDataSetChanged();
+        } else if("display_data".equals(repmsgtype)) {
+            cell.getOutput().setResult(cell.getExecCountForSave(), content.get("data").getAsJsonObject());
+            listAdapter.notifyDataSetChanged();
         } else if("execute_result".equals(repmsgtype)) {
             cell.getOutput().setResult(cell.getExecCountForSave(), content.get("data").getAsJsonObject());
             listAdapter.notifyDataSetChanged();
@@ -413,6 +416,10 @@ public class NotebookActivity extends Activity {
             Log.d("NotebookFrontend", "execute reply comming.");
         } else if("idle".equals(repmsgtype)) {
             disposable.dispose();
+        } else if("status".equals(repmsgtype)) {
+            if("idle".equals(content.get("execution_state").getAsString())) {
+                disposable.dispose();
+            }
         } else {
             // unknown message type.
             Log.d("NotebookFrontend", repmsgtype);
