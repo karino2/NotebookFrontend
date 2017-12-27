@@ -3,25 +3,23 @@ package karino2.livejournal.com.notebookfrontend;
 import android.os.Bundle;
 
 import io.reactivex.Completable;
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.WebSocketListener;
 
 /**
  * Created by _ on 2017/05/28.
  */
 
 public class ConnectToKernelState implements StateMachine.State {
-    StateMachine stateMachine;
+    NotebookStateMachine stateMachine;
     OkHttpClient httpClient;
 
     Function<String, Kernel> kernelFactory;
 
-    public ConnectToKernelState(StateMachine stmac, OkHttpClient client, Function<String, Kernel> kernelFactory) {
+    public ConnectToKernelState(NotebookStateMachine stmac, OkHttpClient client, Function<String, Kernel> kernelFactory) {
         stateMachine = stmac;
         httpClient = client;
         this.kernelFactory = kernelFactory;
@@ -37,6 +35,7 @@ public class ConnectToKernelState implements StateMachine.State {
     public void begin(Bundle bundle) {
         String argJson = bundle.getString("SESSION_INFO_JSON");
         sessionInfo = SessionInfo.fromJson(argJson);
+        stateMachine.notifySessionInfo(sessionInfo);
 
         sessionId = StateMachine.uuid();
         String baseUrl = stateMachine.baseWsUrl();

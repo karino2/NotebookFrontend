@@ -509,6 +509,9 @@ public class NotebookActivity extends Activity {
                 args.putString("BOOK_NAME", notebookPath);
                 showDialog(RENAME_DIALOG_ID, args);
                 return true;
+            case R.id.refresh_item:
+                restartKernel();
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -612,6 +615,25 @@ public class NotebookActivity extends Activity {
 
         stateMachine.sendRequest(url, builder, () -> {
             showMessage("saved.") ;
+        });
+
+    }
+
+    private void restartKernel() {
+        // TODO: check current state.
+        String url = stateMachine.buildUrl("/api/kernels/" + stateMachine.getKernelId() + "/restart");
+
+
+        // empty.
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), "");
+
+        Request.Builder builder = new Request.Builder()
+                .url(url)
+                .post(body);
+
+
+        stateMachine.sendRequest(url, builder, () -> {
+            showMessage("kernel restarted.") ;
         });
 
     }

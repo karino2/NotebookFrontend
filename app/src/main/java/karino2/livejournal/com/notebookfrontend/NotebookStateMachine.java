@@ -12,4 +12,17 @@ public class NotebookStateMachine extends StateMachine {
     public static final int STATE_SEND_REQUEST = 6;
     public static final int STATE_RESPONSE_RECDEIVE = 7;
 
+    SessionInfo currentSession = null;
+
+    public void notifySessionInfo(SessionInfo newSession) {
+        currentSession = newSession;
+    }
+
+    public String getKernelId() {
+        if(currentSession == null) {
+            return "";
+        }
+        return currentSession.kernel.id;
+    }
+
 }
