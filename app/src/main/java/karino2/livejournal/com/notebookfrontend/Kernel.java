@@ -1,5 +1,7 @@
 package karino2.livejournal.com.notebookfrontend;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 
 import java.util.Queue;
@@ -32,6 +34,24 @@ public class Kernel extends WebSocketListener {
 
         messageQueue = queue;
         messageQueue.setMessageArriveListener(()->notifyMessageArrive());
+    }
+
+    @Override
+    public void onClosing(WebSocket webSocket, int code, String reason) {
+        super.onClosing(webSocket, code, reason);
+        Log.d("NotebookFrontend", "onClosing");
+    }
+
+    @Override
+    public void onClosed(WebSocket webSocket, int code, String reason) {
+        super.onClosed(webSocket, code, reason);
+        Log.d("NotebookFrontend", "onClosed");
+    }
+
+    @Override
+    public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+        super.onFailure(webSocket, t, response);
+        Log.d("NotebookFrontend", "onClosed");
     }
 
     @Override
@@ -73,7 +93,8 @@ public class Kernel extends WebSocketListener {
                                @Override
                                public void onNext(@NonNull KernelMessage msg) {
                                    msg.setSessionId(sessionId);
-                                   webSocket.send(msg.toJson());
+                                   boolean issuccess = webSocket.send(msg.toJson());
+                                   Log.d("NotebookFrontend", "Is success? " + issuccess);
                                }
 
                                @Override
