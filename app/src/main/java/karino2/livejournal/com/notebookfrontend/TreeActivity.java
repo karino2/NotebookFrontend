@@ -35,6 +35,7 @@ public class TreeActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tree);
 
+        getActionBar().setDisplayHomeAsUpEnabled(true);
 
         listAdapter = new ArrayAdapter<Directory.FileModel>(this, R.layout.list_item) {
             @NonNull
@@ -67,10 +68,9 @@ public class TreeActivity extends Activity {
         lv.setOnItemClickListener( (adapterView, view, i, l) -> {
             Directory.FileModel file = directory.content.get(i);
             if(file.isNotebook()) {
-                // todo: open
                 openBook(file.path);
             } else if(file.isDirectory()) {
-                showMessage("TODO: open directory: " + file.path);
+                openDirectory(file.path);
             }
         });
 
@@ -105,8 +105,19 @@ public class TreeActivity extends Activity {
             case R.id.new_item:
                 createNewBook();
                 return true;
+            case android.R.id.home:
+                upOrFinish();
+                return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void upOrFinish() {
+        if( "".equals(getCurrentPath())) {
+            finish();
+            return;
+        }
+        openDirectory(directory.getParentDirectory());
     }
 
     private void createNewBook() {
@@ -162,11 +173,12 @@ public class TreeActivity extends Activity {
 
                 listAdapter.clear();
                 listAdapter.addAll(directory.content);
+
                 // listAdapter.notifyDataSetChanged();
             }
         }));
 
-        stateMachine.registerState(TreeStateMachine.STATE_GET_BASE_DIRECTORY, flistState);
+        stateMachine.registerState(TreeStateMachine.STATE_GET_DIRECTORY, flistState);
 
         // strange. and dup from NotebookActivity.
         stateMachine.registerWakeupHandler(()-> {
@@ -183,10 +195,24 @@ public class TreeActivity extends Activity {
         gotoLoginState();
     }
 
+    private String getCurrentPath() {
+        if(directory == null)
+            return "";
+
+        return directory.path;
+    }
+
+    private void openDirectory(String newDir) {
+        Bundle bundle = new Bundle();
+        bundle.putString("CONTENTS_PATH", newDir);
+        stateMachine.gotoNextState(TreeStateMachine.STATE_GET_DIRECTORY, bundle);
+
+    }
+
     private void gotoLoginState() {
         Bundle bundle = new Bundle();
-        bundle.putString("CONTENTS_PATH", "");
-        bundle.putInt("NEXT_STATE", TreeStateMachine.STATE_GET_BASE_DIRECTORY);
+        bundle.putString("CONTENTS_PATH", getCurrentPath());
+        bundle.putInt("NEXT_STATE", TreeStateMachine.STATE_GET_DIRECTORY);
 
         stateMachine.gotoNextState(StateMachine.STATE_LOGIN, bundle);
     }

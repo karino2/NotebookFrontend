@@ -26,6 +26,14 @@ public class CreateSessionState implements StateMachine.State {
     }
 
 
+    public static Bundle createArgBundle(String ipynbPath) {
+        Bundle createSessionArg = new Bundle();
+        createSessionArg.putString("SESSION_ARG_NAME", ipynbPath);
+        createSessionArg.putString("SESSION_ARG_PATH", ipynbPath);
+        return createSessionArg;
+    }
+
+
     @Override
     public void begin(Bundle bundle) {
         String name = bundle.getString("SESSION_ARG_NAME");

@@ -56,9 +56,7 @@ public class JsonRetrieveState implements  StateMachine.State {
                 .subscribe(json -> {
                     Log.d("NotebookFrontend", "json retrieve subscribe");
                     onJsonReceive.onStringCome((String)json);
-                    Bundle createSessionArg = new Bundle();
-                    createSessionArg.putString("SESSION_ARG_NAME", ipynbPath);
-                    createSessionArg.putString("SESSION_ARG_PATH", ipynbPath);
+                    Bundle createSessionArg = CreateSessionState.createArgBundle(ipynbPath);
                     stateMachine.gotoNextState(NotebookStateMachine.STATE_CREATE_SESSION, createSessionArg);
                 });
 

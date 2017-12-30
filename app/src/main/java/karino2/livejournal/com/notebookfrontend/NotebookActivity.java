@@ -634,6 +634,9 @@ public class NotebookActivity extends Activity {
 
         stateMachine.sendRequest(url, builder, () -> {
             showMessage("kernel restarted.") ;
+            Bundle createSessionArg = CreateSessionState.createArgBundle(notebookPath);
+            stateMachine.gotoNextState(NotebookStateMachine.STATE_CREATE_SESSION, createSessionArg);
+
         });
 
     }

@@ -5,5 +5,5 @@ package karino2.livejournal.com.notebookfrontend;
  */
 
 public class TreeStateMachine extends StateMachine{
-    public static final int STATE_GET_BASE_DIRECTORY = 2;
+    public static final int STATE_GET_DIRECTORY = 2;
 }

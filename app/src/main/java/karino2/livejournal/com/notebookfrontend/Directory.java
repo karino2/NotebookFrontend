@@ -1,5 +1,6 @@
 package karino2.livejournal.com.notebookfrontend;
 
+import java.io.File;
 import java.util.List;
 
 /**
@@ -11,6 +12,13 @@ public class Directory {
     public List<FileModel> content;
     public String name;
     public String path;
+
+    public String getParentDirectory() {
+        File parent =  (new File(path)).getParentFile();
+        if(parent != null)
+            return parent.getPath();
+        return "";
+    }
 
     public static class FileModel {
         public String type;
