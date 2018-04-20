@@ -11,6 +11,11 @@
             android:icon="@mipmap/ic_menu_refresh"
             android:showAsAction="ifRoom"
             tools:ignore="AppCompatResource"></item>
+        <item android:id="@+id/reconnect_item"
+            android:title="Reconnect"
+            android:icon="@mipmap/ic_menu_reconnect"
+            android:showAsAction="ifRoom"
+            tools:ignore="AppCompatResource"></item>
         <item android:id="@+id/rename_item"
             android:title="Rename"
             android:showAsAction="ifRoom"

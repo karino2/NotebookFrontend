@@ -1,5 +1,6 @@
 package karino2.livejournal.com.notebookfrontend;
 
+import android.accounts.NetworkErrorException;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -45,6 +46,7 @@ public class Kernel extends WebSocketListener {
     @Override
     public void onClosed(WebSocket webSocket, int code, String reason) {
         super.onClosed(webSocket, code, reason);
+        // called.
         Log.d("NotebookFrontend", "onClosed");
     }
 
@@ -93,13 +95,17 @@ public class Kernel extends WebSocketListener {
                                @Override
                                public void onNext(@NonNull KernelMessage msg) {
                                    msg.setSessionId(sessionId);
-                                   boolean issuccess = webSocket.send(msg.toJson());
-                                   Log.d("NotebookFrontend", "Is success? " + issuccess);
+                                   boolean isSuccess = webSocket.send(msg.toJson());
+                                   Log.d("NotebookFrontend", "Is success? " + isSuccess);
+                                   if(!isSuccess) {
+                                       messageQueue.onError(new NetworkErrorException("send fail"));
+                                   }
                                }
 
                                @Override
                                public void onError(@NonNull Throwable e) {
                                    isHandling = false;
+                                   // Log.d("NotebookFrontend", "on error");
                                }
 
                                @Override

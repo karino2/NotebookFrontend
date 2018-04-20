@@ -28,16 +28,23 @@ public class ConnectToKernelState implements StateMachine.State {
     String sessionId;
     SessionInfo sessionInfo;
 
-
     Kernel kernel;
+
+    // use for reconnect
+    String argJson;
 
     @Override
     public void begin(Bundle bundle) {
-        String argJson = bundle.getString("SESSION_INFO_JSON");
-        sessionInfo = SessionInfo.fromJson(argJson);
-        stateMachine.notifySessionInfo(sessionInfo);
 
-        sessionId = StateMachine.uuid();
+        boolean isReconnect = bundle.getBoolean("IS_RECONNECT", false);
+        if(!isReconnect) {
+            argJson = bundle.getString("SESSION_INFO_JSON");
+            sessionInfo = SessionInfo.fromJson(argJson);
+            stateMachine.notifySessionInfo(sessionInfo);
+
+            sessionId = StateMachine.uuid();
+        }
+
         String baseUrl = stateMachine.baseWsUrl();
         String url = baseUrl + "/api/kernels/" + sessionInfo.kernel.id + "/channels?session_id=" + sessionId;
 
@@ -46,7 +53,9 @@ public class ConnectToKernelState implements StateMachine.State {
                 .build();
 
         Completable.create(emitter -> {
-            kernel = kernelFactory.apply(sessionId);
+            if(!isReconnect) {
+                kernel = kernelFactory.apply(sessionId);
+            }
             httpClient.newWebSocket(request, kernel);
             emitter.onComplete();
         }).subscribeOn(Schedulers.io())

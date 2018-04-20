@@ -379,6 +379,8 @@ public class NotebookActivity extends Activity {
 
             @Override
             public void onError(@NonNull Throwable e) {
+                isDisconnected = true;
+                invalidateOptionsMenu();
             }
 
             @Override
@@ -441,7 +443,8 @@ public class NotebookActivity extends Activity {
         });
         stateMachine.registerState(NotebookStateMachine.STATE_GET_BASE_JSON, jsonState);
         stateMachine.registerState(NotebookStateMachine.STATE_CREATE_SESSION, new CreateSessionState(stateMachine, httpClient));
-        stateMachine.registerState(NotebookStateMachine.STATE_CONNECT_TO_KERNEL, new ConnectToKernelState(stateMachine, httpClient, sesid-> new Kernel(sesid, messageQueue)));
+
+        stateMachine.registerState(NotebookStateMachine.STATE_CONNECT_TO_KERNEL,  new ConnectToKernelState(stateMachine, httpClient, sesid-> new Kernel(sesid, messageQueue)));
         stateMachine.registerState(NotebookStateMachine.STATE_WAIT_MESSAGE, new StateMachine.State() {
             @Override
             public void begin(Bundle bundle) {
@@ -489,11 +492,19 @@ public class NotebookActivity extends Activity {
         listAdapter.addAll(note.content.cells);
     }
 
+    boolean isDisconnected = false;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.notebook_menu, menu);
+        menu.findItem(R.id.reconnect_item).setEnabled(isDisconnected);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.reconnect_item).setEnabled(isDisconnected);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -510,8 +521,22 @@ public class NotebookActivity extends Activity {
             case R.id.refresh_item:
                 restartKernel();
                 return true;
+            case R.id.reconnect_item:
+                startReconnect();
+                return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void startReconnect() {
+        // TODO: check current state.
+
+        messageQueue.resetForReconnect();
+
+        Bundle arg = new Bundle();
+        arg.putBoolean("IS_RECONNECT", true);
+
+        stateMachine.gotoNextState(NotebookStateMachine.STATE_CONNECT_TO_KERNEL, arg);
     }
 
     @Override

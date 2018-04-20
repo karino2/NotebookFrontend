@@ -29,15 +29,27 @@ public class KernelMessageQueue {
 
     ObservableEmitter<KernelReply> emitter;
 
-    Observable<KernelReply> replyObservable = Observable.create(new ObservableOnSubscribe<KernelReply>() {
-        @Override
-        public void subscribe(@NonNull ObservableEmitter<KernelReply> e) throws Exception {
-            emitter = e;
-        }
-    }).publish().autoConnect();
+    public void resetForReconnect() {
+        replyObservable = createReplyObservable();
+    }
+
+    Observable<KernelReply> replyObservable = createReplyObservable();
+
+    private Observable<KernelReply> createReplyObservable() {
+        return Observable.create(new ObservableOnSubscribe<KernelReply>() {
+            @Override
+            public void subscribe(@NonNull ObservableEmitter<KernelReply> e) throws Exception {
+                emitter = e;
+            }
+        }).publish().autoConnect();
+    }
 
     public void onReplyMessage(KernelReply reply) {
         emitter.onNext(reply);
+    }
+
+    public void onError(Throwable e) {
+        emitter.onError(e);
     }
 
     public Observable<KernelReply> getReplyObservable() {
